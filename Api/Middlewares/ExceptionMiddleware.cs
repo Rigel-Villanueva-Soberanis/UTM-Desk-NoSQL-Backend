@@ -1,4 +1,5 @@
 using Application.Common;
+using System.Net;
 
 namespace Api.Middlewares;
 
@@ -19,13 +20,33 @@ public class ExceptionMiddleware
         }
         catch (DomainException ex)
         {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsJsonAsync(new { success = false, message = ex.Message });
+            // Mapeamos el código del dominio al HTTP status correcto
+            var statusCode = ex.Code switch
+            {
+                ApiErrors.NotFound        => (int)HttpStatusCode.NotFound,           // 404
+                ApiErrors.Unauthorized    => (int)HttpStatusCode.Unauthorized,       // 401
+                ApiErrors.Conflict        => (int)HttpStatusCode.Conflict,           // 409
+                ApiErrors.ValidationFailed => (int)HttpStatusCode.BadRequest,        // 400
+                _                         => (int)HttpStatusCode.BadRequest          // 400 por defecto
+            };
+
+            context.Response.StatusCode = statusCode;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = false,
+                code    = ex.Code,
+                message = ex.Message
+            });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new { success = false, message = "Error interno del servidor." });
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = false,
+                message = "Error interno del servidor.",
+                detail  = ex.Message   // ← útil para depuración; quitar en producción
+            });
         }
     }
 }

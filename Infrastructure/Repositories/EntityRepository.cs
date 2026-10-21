@@ -1,52 +1,46 @@
 using Application.Interfaces;
 using Domain;
 using Infrastructure.Data;
-using Dapper;
+using MongoDB.Driver;
 
 namespace Infrastructure.Repositories;
 
 /// <summary>
-/// Implementación concreta del repositorio de ejemplo usando Dapper.
+/// Implementación concreta del repositorio de ejemplo usando MongoDB.Driver.
 /// Crea un repositorio similar por cada entidad del dominio.
 /// </summary>
 public class EntityRepository : IEntityRepository
 {
-    private readonly DbConnectionFactory _factory;
+    private readonly IMongoCollection<Entity> _collection;
 
-    public EntityRepository(DbConnectionFactory factory)
+    public EntityRepository(MongoDbContext context)
     {
-        _factory = factory;
+        _collection = context.GetCollection<Entity>("entities");
     }
 
     public async Task<IEnumerable<Entity>> GetAllAsync()
     {
-        using var conn = _factory.CreateConnection();
-        return await conn.QueryAsync<Entity>("SELECT * FROM Entities");
+        return await _collection.Find(_ => true).ToListAsync();
     }
 
-    public async Task<Entity?> GetByIdAsync(int id)
+    public async Task<Entity?> GetByIdAsync(string id)
     {
-        using var conn = _factory.CreateConnection();
-        return await conn.QueryFirstOrDefaultAsync<Entity>(
-            "SELECT * FROM Entities WHERE Id = @Id", new { Id = id });
+        return await _collection.Find(e => e.Id == id).FirstOrDefaultAsync();
     }
 
-    public async Task<int> CreateAsync(Entity entity)
+    public async Task<Entity> CreateAsync(Entity entity)
     {
-        using var conn = _factory.CreateConnection();
-        return await conn.ExecuteScalarAsync<int>(
-            "INSERT INTO Entities (Name) OUTPUT INSERTED.Id VALUES (@Name)", entity);
+        await _collection.InsertOneAsync(entity);
+        return entity;
     }
 
     public async Task UpdateAsync(Entity entity)
     {
-        using var conn = _factory.CreateConnection();
-        await conn.ExecuteAsync("UPDATE Entities SET Name = @Name WHERE Id = @Id", entity);
+        await _collection.ReplaceOneAsync(e => e.Id == entity.Id, entity);
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteAsync(string id)
     {
-        using var conn = _factory.CreateConnection();
-        await conn.ExecuteAsync("DELETE FROM Entities WHERE Id = @Id", new { Id = id });
+        await _collection.DeleteOneAsync(e => e.Id == id);
     }
 }

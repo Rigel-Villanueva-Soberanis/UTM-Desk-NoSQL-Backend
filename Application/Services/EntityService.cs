@@ -27,15 +27,16 @@ public class EntityService
         return _mapper.Map<IEnumerable<EntityResponse>>(entities);
     }
 
-    public async Task<EntityResponse?> GetByIdAsync(int id)
+    public async Task<EntityResponse?> GetByIdAsync(string id)
     {
         var entity = await _repository.GetByIdAsync(id);
         return entity is null ? null : _mapper.Map<EntityResponse>(entity);
     }
 
-    public async Task<int> CreateAsync(CreateEntityRequest request)
+    public async Task<EntityResponse> CreateAsync(CreateEntityRequest request)
     {
         var entity = new Entity { Name = request.Name };
-        return await _repository.CreateAsync(entity);
+        var created = await _repository.CreateAsync(entity);
+        return _mapper.Map<EntityResponse>(created);
     }
 }

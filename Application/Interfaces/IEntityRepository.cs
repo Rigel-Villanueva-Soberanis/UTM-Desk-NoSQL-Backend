@@ -9,8 +9,8 @@ namespace Application.Interfaces;
 public interface IEntityRepository
 {
     Task<IEnumerable<Entity>> GetAllAsync();
-    Task<Entity?> GetByIdAsync(int id);
-    Task<int> CreateAsync(Entity entity);
+    Task<Entity?> GetByIdAsync(string id);
+    Task<Entity> CreateAsync(Entity entity);
     Task UpdateAsync(Entity entity);
-    Task DeleteAsync(int id);
+    Task DeleteAsync(string id);
 }

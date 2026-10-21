@@ -1,4 +1,6 @@
 using Api.Common;
+using Application.DTOs.Requests;
+using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
@@ -10,13 +12,21 @@ namespace Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    // TODO: Inyectar el servicio de autenticación
-    public AuthController() { }
+    private readonly AuthService _authService;
 
-    [HttpPost("login")]
-    public IActionResult Login()
+    public AuthController(AuthService authService)
     {
-        // TODO: Implementar lógica de login
-        return Ok(ApiResponse<string>.Ok("Token aquí", "Login exitoso"));
+        _authService = authService;
+    }
+
+    /// <summary>
+    /// Inicia sesión con usuario y contraseña.
+    /// Devuelve un token JWT con el rol y permisos del usuario.
+    /// </summary>
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var resultado = await _authService.LoginAsync(request);
+        return Ok(ApiResponse<object>.Ok(resultado, "Sesión iniciada correctamente"));
     }
 }
