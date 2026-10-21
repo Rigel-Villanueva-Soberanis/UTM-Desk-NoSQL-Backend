@@ -1,0 +1,45 @@
+# ─── Visual Studio ───────────────────────────────────────────────────────────
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ─── Archivos compilados (generados automáticamente) ─────────────────────────
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# ─── NuGet ───────────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ─── Entornos y secretos ─────────────────────────────────────────────────────
+appsettings.Development.json
+appsettings.Production.json
+.env
+.env.*
+**/secrets.json
+
+# ─── Archivos de sistema ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Documentación local (no se sube al repo) ────────────────────────────────
+*.md
+
+# ─── Rider / JetBrains ───────────────────────────────────────────────────────
+.idea/
+*.sln.iml
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+# Descomenta si no quieres subir el Dockerfile
+# Dockerfile
+
+# ─── Publicación ─────────────────────────────────────────────────────────────
+**/publish/
