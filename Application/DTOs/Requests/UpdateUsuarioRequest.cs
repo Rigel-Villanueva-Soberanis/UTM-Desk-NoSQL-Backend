@@ -31,6 +31,8 @@ public class UpdateUsuarioRequest
     [Required(ErrorMessage = "El rol del sistema es obligatorio.")]
     public string RolSistema { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "La clasificación del rol es obligatoria.")]
-    public string ClasificacionRol { get; set; } = string.Empty;
+    /// <summary>
+    /// Clasificación (subrol). Obligatoria u opcional según 'requiere_clasificacion' del rol en roles_sistema.
+    /// </summary>
+    public string? ClasificacionRol { get; set; }
 }

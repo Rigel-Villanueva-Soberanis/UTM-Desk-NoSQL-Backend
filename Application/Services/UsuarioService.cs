@@ -6,8 +6,6 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain;
 using MongoDB.Bson;
-using System.Globalization;
-using System.Text;
 
 namespace Application.Services;
 
@@ -209,17 +207,19 @@ public class UsuarioService
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Verifica que el rol y la clasificación enviados por el frontend existan en el catálogo
-    /// <c>roles_sistema</c> y que la clasificación esté dentro de <c>clasificaciones_permitidas</c> de ese rol.
-    /// La comparación ignora mayúsculas, espacios y acentos tanto en lo que manda el frontend
-    /// como en lo que está guardado en la BD ("SOPORTE" == "Soporte", "tecnico" == "Técnico").
-    /// Devuelve ambos valores normalizados en minúsculas (ej. "reportante", "estudiante").
+    /// Verifica el rol y la clasificación (subrol) contra el catálogo <c>roles_sistema</c>.
+    /// La comparación ignora mayúsculas, espacios y acentos (en lo del frontend y en lo de la BD).
+    /// Reglas por rol según el catálogo:
+    ///   • requiere_clasificacion = true  → la clasificación es obligatoria y debe estar en clasificaciones_permitidas.
+    ///   • requiere_clasificacion = false → es opcional; si se envía, debe estar en clasificaciones_permitidas.
+    ///   • clasificaciones_permitidas vacía → el rol no maneja clasificación (se guarda vacía).
+    /// Devuelve ambos valores en minúsculas (ej. "reportante", "docente").
     /// </summary>
     private async Task<(string Rol, string Clasificacion)> ValidarRolYClasificacionAsync(
-        string rolRecibido, string clasificacionRecibida)
+        string rolRecibido, string? clasificacionRecibida)
     {
-        var rol           = (rolRecibido ?? string.Empty).Trim().ToLowerInvariant();
-        var clasificacion = (clasificacionRecibida ?? string.Empty).Trim().ToLowerInvariant();
+        var rol           = TextoNormalizer.Normalizar(rolRecibido);
+        var clasificacion = TextoNormalizer.Normalizar(clasificacionRecibida);
 
         if (string.IsNullOrWhiteSpace(rol))
             throw UsuarioErrors.RolNoExiste(rolRecibido ?? string.Empty);
@@ -227,34 +227,42 @@ public class UsuarioService
         var catalogo = await _catalogoRepository.GetByClaveAsync(ClaveCatalogoRoles)
             ?? throw CatalogoErrors.ClaveNotFound(ClaveCatalogoRoles);
 
-        foreach (var item in catalogo.Contenido)
+        if (!catalogo.Contenido.IsBsonArray)
+            throw CatalogoErrors.EstructuraInvalida(ClaveCatalogoRoles);
+
+        foreach (var item in catalogo.Contenido.AsBsonArray)
         {
-            // Cada elemento debe ser un objeto { rol: "Soporte", clasificaciones_permitidas: [...] }
+            // Cada elemento: { rol, requiere_clasificacion, clasificaciones_permitidas: [...] }
             if (item is not BsonDocument doc || !doc.Contains("rol") || !doc["rol"].IsString)
                 continue;
 
-            var rolCatalogo = doc["rol"].AsString.Trim().ToLowerInvariant();
-            if (QuitarAcentos(rolCatalogo) != QuitarAcentos(rol))
+            var rolCatalogo = TextoNormalizer.Normalizar(doc["rol"].AsString);
+            if (!TextoNormalizer.Iguales(rolCatalogo, rol))
                 continue;
 
             // Rol encontrado → validar la clasificación
+            var requiere = doc.Contains("requiere_clasificacion")
+                && doc["requiere_clasificacion"].IsBoolean
+                && doc["requiere_clasificacion"].AsBoolean;
+
             var permitidas = doc.Contains("clasificaciones_permitidas") && doc["clasificaciones_permitidas"].IsBsonArray
                 ? doc["clasificaciones_permitidas"].AsBsonArray
                     .Where(c => c.IsString)
-                    .Select(c => c.AsString.Trim().ToLowerInvariant())
+                    .Select(c => TextoNormalizer.Normalizar(c.AsString))
                     .ToList()
                 : new List<string>();
 
-            // Si el rol no define clasificaciones permitidas, se acepta la enviada tal cual (en minúsculas)
-            if (permitidas.Count == 0)
-                return (rolCatalogo, clasificacion);
-
             if (string.IsNullOrWhiteSpace(clasificacion))
-                throw UsuarioErrors.ClasificacionNoValida(clasificacionRecibida ?? string.Empty, rolCatalogo, permitidas);
+            {
+                if (requiere)
+                    throw UsuarioErrors.ClasificacionRequerida(rolCatalogo, permitidas);
+                return (rolCatalogo, string.Empty);
+            }
 
-            var clasificacionCatalogo = permitidas
-                .FirstOrDefault(c => QuitarAcentos(c) == QuitarAcentos(clasificacion));
+            if (permitidas.Count == 0)
+                throw UsuarioErrors.ClasificacionNoAplica(rolCatalogo);
 
+            var clasificacionCatalogo = permitidas.FirstOrDefault(c => TextoNormalizer.Iguales(c, clasificacion));
             if (clasificacionCatalogo is null)
                 throw UsuarioErrors.ClasificacionNoValida(clasificacionRecibida!.Trim(), rolCatalogo, permitidas);
 
@@ -262,19 +270,6 @@ public class UsuarioService
         }
 
         throw UsuarioErrors.RolNoExiste(rolRecibido!.Trim());
-    }
-
-    /// <summary>Elimina acentos/diacríticos para comparar ("técnico" == "tecnico").</summary>
-    private static string QuitarAcentos(string texto)
-    {
-        var normalizado = texto.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(normalizado.Length);
-        foreach (var c in normalizado)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                sb.Append(c);
-        }
-        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
     // (protección NoSQL centralizada en Application.Common.NoSqlSanitizer)

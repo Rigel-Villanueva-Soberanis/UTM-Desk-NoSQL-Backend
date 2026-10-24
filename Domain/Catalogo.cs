@@ -5,8 +5,8 @@ namespace Domain;
 
 /// <summary>
 /// Representa un catálogo del sistema.
-/// El campo Contenido es dinámico: puede ser una lista de strings
-/// o una lista de objetos, dependiendo del tipo de catálogo.
+/// El campo Contenido es dinámico: según el catálogo puede ser un arreglo (array)
+/// o una estructura de configuración (object), tal como lo permite la validación de MongoDB.
 /// </summary>
 public class Catalogo
 {
@@ -18,9 +18,9 @@ public class Catalogo
     public string ClaveCatalogo { get; set; } = string.Empty;
 
     /// <summary>
-    /// Contenido dinámico: puede ser array de strings u objetos complejos.
-    /// BsonArray permite almacenar cualquier estructura de MongoDB sin restricción de tipo.
+    /// Contenido dinámico: BsonArray o BsonDocument.
+    /// BsonValue permite leer cualquiera de las dos estructuras sin romper la deserialización.
     /// </summary>
     [BsonElement("contenido")]
-    public BsonArray Contenido { get; set; } = new BsonArray();
+    public BsonValue Contenido { get; set; } = new BsonArray();
 }

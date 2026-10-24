@@ -1,16 +1,15 @@
 using Domain;
+using MongoDB.Bson;
 
 namespace Application.Interfaces;
 
 /// <summary>
 /// Contrato del repositorio de catálogos.
+/// No hay Create ni Delete: las claves de catálogo no se crean ni se borran desde la API.
 /// </summary>
 public interface ICatalogoRepository
 {
     Task<IEnumerable<Catalogo>> GetAllAsync();
-    Task<Catalogo?> GetByIdAsync(string id);
     Task<Catalogo?> GetByClaveAsync(string clave);
-    Task<Catalogo> CreateAsync(Catalogo catalogo);
-    Task UpdateAsync(Catalogo catalogo);
-    Task DeleteAsync(string id);
+    Task UpdateContenidoAsync(string clave, BsonValue contenido);
 }

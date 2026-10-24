@@ -45,7 +45,9 @@ public class CreateUsuarioRequest
     [Required(ErrorMessage = "El rol del sistema es obligatorio.")]
     public string RolSistema { get; set; } = string.Empty;
 
-    /// <summary>Clasificación del rol. Ej: "Docente", "Estudiante", "General".</summary>
-    [Required(ErrorMessage = "La clasificación del rol es obligatoria.")]
-    public string ClasificacionRol { get; set; } = string.Empty;
+    /// <summary>
+    /// Clasificación (subrol). Ej: "Docente", "Redes".
+    /// Es obligatoria u opcional según 'requiere_clasificacion' del rol en el catálogo roles_sistema.
+    /// </summary>
+    public string? ClasificacionRol { get; set; }
 }

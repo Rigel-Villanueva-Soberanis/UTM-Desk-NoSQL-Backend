@@ -6,17 +6,20 @@ namespace Api.Middlewares;
 
 /// <summary>
 /// Middleware global para capturar excepciones no manejadas y devolver respuestas estandarizadas.
-/// NUNCA expone detalles internos (stack trace, nombres de clases, queries) al cliente.
+/// En PRODUCCIÓN nunca expone detalles internos (stack trace, nombres de clases, queries) al cliente.
+/// En DESARROLLO, los errores de servidor (500 / 503) agregan el campo "detalle" para depurar más rápido.
 /// </summary>
 public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
+    private readonly IHostEnvironment _env;
 
-    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IHostEnvironment env)
     {
         _next   = next;
         _logger = logger;
+        _env    = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -32,8 +35,10 @@ public class ExceptionMiddleware
             {
                 ApiErrors.NotFound         => (int)HttpStatusCode.NotFound,       // 404
                 ApiErrors.Unauthorized     => (int)HttpStatusCode.Unauthorized,   // 401
+                ApiErrors.Forbidden        => (int)HttpStatusCode.Forbidden,      // 403
                 ApiErrors.Conflict         => (int)HttpStatusCode.Conflict,       // 409
                 ApiErrors.ValidationFailed => (int)HttpStatusCode.BadRequest,     // 400
+                ApiErrors.InternalError    => (int)HttpStatusCode.InternalServerError, // 500
                 _                          => (int)HttpStatusCode.BadRequest      // 400 por defecto
             };
 
@@ -42,7 +47,8 @@ public class ExceptionMiddleware
             {
                 success = false,
                 code    = ex.Code,
-                message = ex.Message
+                message = ex.Message,
+                errors  = ex.Errors   // lista detallada (ej. validación de catálogos) o null
             });
         }
         catch (MongoException ex)
@@ -54,7 +60,8 @@ public class ExceptionMiddleware
             await context.Response.WriteAsJsonAsync(new
             {
                 success = false,
-                message = "No se pudo completar la operación. Intenta de nuevo más tarde."
+                message = "No se pudo completar la operación. Intenta de nuevo más tarde.",
+                detalle = ObtenerDetalle(ex)   // solo en Desarrollo; en Producción es null
             });
         }
         catch (FormatException ex)
@@ -78,8 +85,30 @@ public class ExceptionMiddleware
             await context.Response.WriteAsJsonAsync(new
             {
                 success = false,
-                message = "Error interno del servidor. Contacta al administrador."
+                message = "Error interno del servidor. Contacta al administrador.",
+                detalle = ObtenerDetalle(ex)   // solo en Desarrollo; en Producción es null
             });
         }
+    }
+
+    /// <summary>
+    /// Detalle técnico del error, SOLO en ambiente de Desarrollo (ASPNETCORE_ENVIRONMENT=Development).
+    /// En Producción devuelve null, así el cliente nunca ve información interna.
+    /// </summary>
+    private object? ObtenerDetalle(Exception ex)
+    {
+        if (!_env.IsDevelopment()) return null;
+
+        return new
+        {
+            tipo       = ex.GetType().Name,
+            mensaje    = ex.Message,
+            interno    = ex.InnerException?.Message,
+            stackTrace = ex.StackTrace?
+                .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+                .Select(l => l.Trim())
+                .Take(10)
+                .ToArray()
+        };
     }
 }

@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Application.Services;
+using Application.Validators.Catalogos;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 
@@ -24,6 +25,11 @@ public static class DependencyInjection
         services.AddScoped<IEntityRepository, EntityRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+
+        // Validadores de catálogos (uno por catálogo editable: permisos + estructura)
+        services.AddSingleton<ICatalogoValidator, RolesSistemaValidator>();
+        services.AddSingleton<ICatalogoValidator, EdificiosValidator>();
+        services.AddSingleton<ICatalogoValidator, CategoriasIncidenciaValidator>();
 
         // Servicios de Aplicación
         services.AddScoped<EntityService>();

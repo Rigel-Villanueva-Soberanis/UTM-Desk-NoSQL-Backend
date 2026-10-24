@@ -1,6 +1,7 @@
 using Application.Interfaces;
 using Domain;
 using Infrastructure.Data;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Infrastructure.Repositories;
@@ -20,21 +21,14 @@ public class CatalogoRepository : ICatalogoRepository
     public async Task<IEnumerable<Catalogo>> GetAllAsync()
         => await _collection.Find(_ => true).ToListAsync();
 
-    public async Task<Catalogo?> GetByIdAsync(string id)
-        => await _collection.Find(c => c.Id == id).FirstOrDefaultAsync();
-
     public async Task<Catalogo?> GetByClaveAsync(string clave)
         => await _collection.Find(c => c.ClaveCatalogo == clave).FirstOrDefaultAsync();
 
-    public async Task<Catalogo> CreateAsync(Catalogo catalogo)
-    {
-        await _collection.InsertOneAsync(catalogo);
-        return catalogo;
-    }
-
-    public async Task UpdateAsync(Catalogo catalogo)
-        => await _collection.ReplaceOneAsync(c => c.Id == catalogo.Id, catalogo);
-
-    public async Task DeleteAsync(string id)
-        => await _collection.DeleteOneAsync(c => c.Id == id);
+    /// <summary>
+    /// Reemplaza solo el campo <c>contenido</c>. El _id y la clave_catalogo nunca se tocan.
+    /// </summary>
+    public async Task UpdateContenidoAsync(string clave, BsonValue contenido)
+        => await _collection.UpdateOneAsync(
+            c => c.ClaveCatalogo == clave,
+            Builders<Catalogo>.Update.Set(c => c.Contenido, contenido));
 }

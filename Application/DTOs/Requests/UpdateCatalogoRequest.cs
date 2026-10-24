@@ -3,17 +3,15 @@ using System.Text.Json;
 namespace Application.DTOs.Requests;
 
 /// <summary>
-/// Datos para actualizar un catálogo existente.
+/// Datos para modificar el contenido de un catálogo existente.
+/// La clave va en la URL (PUT /api/catalogos/{clave}) y no se puede cambiar.
 /// </summary>
 public class UpdateCatalogoRequest
 {
     /// <summary>
-    /// Nueva clave semántica del catálogo.
-    /// </summary>
-    public string ClaveCatalogo { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Nuevo contenido dinámico. Reemplaza completamente el contenido anterior.
+    /// Nuevo contenido. Reemplaza completamente el anterior.
+    /// Se recibe como JsonElement porque cada catálogo tiene su propia estructura;
+    /// el validador del catálogo se encarga de revisarla.
     /// </summary>
     public JsonElement Contenido { get; set; }
 }

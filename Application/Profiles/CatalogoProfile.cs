@@ -10,7 +10,7 @@ public class CatalogoProfile : Profile
     public CatalogoProfile()
     {
         // Catalogo (entidad) → CatalogoResponse (DTO de salida)
-        // Contenido se convierte de BsonArray a su representación JSON nativa
+        // Contenido (array u object de BSON) se convierte a su representación .NET (List / Dictionary)
         CreateMap<Catalogo, CatalogoResponse>()
             .ForMember(dest => dest.Contenido,
                 opt => opt.MapFrom(src => BsonTypeMapper.MapToDotNetValue(src.Contenido)));
