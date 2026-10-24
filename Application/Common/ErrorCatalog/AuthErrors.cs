@@ -8,5 +8,5 @@ public static class AuthErrors
         new(ApiErrors.Unauthorized, "Usuario o contraseña incorrectos.");
 
     public static DomainException CuentaInactiva() =>
-        new(ApiErrors.Unauthorized, "La cuenta está desactivada. Contacta al administrador.");
+        new(ApiErrors.Unauthorized, "La cuenta está desactivada. Contacta con el soporte.");
 }

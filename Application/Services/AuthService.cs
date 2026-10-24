@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Application.Common;
 using Application.Common.ErrorCatalog;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
@@ -27,8 +28,14 @@ public class AuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
+        // Protección anti-inyección NoSQL (endpoint público, mayor riesgo)
+        NoSqlSanitizer.ValidarTodos(
+            (request.Usuario,  "usuario"),
+            (request.Password, "password")
+        );
+
         // 1. Buscar el usuario por su nombre de usuario
-        var usuario = await _usuarioRepository.GetByUsernameAsync(request.Usuario)
+        var usuario = await _usuarioRepository.GetByUsernameAsync(request.Usuario.Trim().ToLowerInvariant())
             ?? throw AuthErrors.CredencialesInvalidas();
 
         // 2. Verificar que la cuenta esté activa
@@ -51,7 +58,9 @@ public class AuthService
             ExpiresIn        = expiraEn,
             ExpiresAt        = DateTime.UtcNow.AddSeconds(expiraEn),
             Id               = usuario.Id,
-            Nombre           = usuario.Nombre,
+            Nombres          = usuario.Nombres,
+            ApellidoPaterno  = usuario.ApellidoPaterno,
+            ApellidoMaterno  = usuario.ApellidoMaterno,
             Usuario          = usuario.Username,
             Correo           = usuario.Correo,
             RolSistema       = usuario.RolSistema,
@@ -73,11 +82,12 @@ public class AuthService
         // Claims = datos que van DENTRO del token (se pueden leer sin llamar al API)
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, id),
+            new Claim(JwtRegisteredClaimNames.Sub,        id),
             new Claim(JwtRegisteredClaimNames.UniqueName, username),
-            new Claim("rol_sistema",      rol),
-            new Claim("clasificacion_rol", clasificacion),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Role,                    rol),          // ← para [Authorize(Roles="...")]
+            new Claim("rol_sistema",                      rol),          // ← claim personalizado legible
+            new Claim("clasificacion_rol",                clasificacion),
+            new Claim(JwtRegisteredClaimNames.Jti,        Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
                 ClaimValueTypes.Integer64)

@@ -1,7 +1,7 @@
 namespace Application.DTOs.Responses;
 
 /// <summary>
-/// Respuesta del login: token JWT + datos del usuario.
+/// Respuesta del login: token JWT + datos del usuario autenticado.
 /// </summary>
 public class LoginResponse
 {
@@ -11,14 +11,10 @@ public class LoginResponse
     /// </summary>
     public string Token { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Siempre "Bearer" — indica al cliente cómo usar el token en el header.
-    /// </summary>
+    /// <summary>Siempre "Bearer" — indica al cliente cómo usar el token en el header.</summary>
     public string TokenType { get; set; } = "Bearer";
 
-    /// <summary>
-    /// Segundos de vida del token desde que se generó (8 horas = 28800).
-    /// </summary>
+    /// <summary>Segundos de vida del token desde que se generó (8 horas = 28800).</summary>
     public int ExpiresIn { get; set; }
 
     /// <summary>
@@ -29,7 +25,13 @@ public class LoginResponse
 
     // ─── Datos del usuario ────────────────────────────────────────────────────
     public string Id { get; set; } = string.Empty;
-    public string Nombre { get; set; } = string.Empty;
+    public string Nombres { get; set; } = string.Empty;
+    public string ApellidoPaterno { get; set; } = string.Empty;
+    public string ApellidoMaterno { get; set; } = string.Empty;
+
+    /// <summary>Nombre completo concatenado, listo para mostrar en UI.</summary>
+    public string NombreCompleto => $"{Nombres} {ApellidoPaterno} {ApellidoMaterno}".Trim();
+
     public string Usuario { get; set; } = string.Empty;
     public string Correo { get; set; } = string.Empty;
     public string RolSistema { get; set; } = string.Empty;

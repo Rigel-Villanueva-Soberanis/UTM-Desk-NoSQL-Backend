@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.ErrorCatalog;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
@@ -39,6 +40,7 @@ public class CatalogoService
 
     public async Task<CatalogoResponse?> GetByClaveAsync(string clave)
     {
+        NoSqlSanitizer.Validar(clave, "clave");
         var catalogo = await _repository.GetByClaveAsync(clave)
             ?? throw CatalogoErrors.ClaveNotFound(clave);
         return _mapper.Map<CatalogoResponse>(catalogo);
@@ -46,6 +48,8 @@ public class CatalogoService
 
     public async Task<CatalogoResponse> CreateAsync(CreateCatalogoRequest request)
     {
+        NoSqlSanitizer.Validar(request.ClaveCatalogo, "clave_catalogo");
+
         // Validar que la clave no esté duplicada
         var existente = await _repository.GetByClaveAsync(request.ClaveCatalogo);
         if (existente is not null)
@@ -63,6 +67,8 @@ public class CatalogoService
 
     public async Task UpdateAsync(string id, UpdateCatalogoRequest request)
     {
+        NoSqlSanitizer.Validar(request.ClaveCatalogo, "clave_catalogo");
+
         var catalogo = await _repository.GetByIdAsync(id)
             ?? throw CatalogoErrors.NotFound(id);
 
@@ -93,11 +99,24 @@ public class CatalogoService
     /// Convierte un JsonElement (recibido del cliente) a BsonArray (formato de MongoDB).
     /// Acepta cualquier estructura JSON sin importar si son strings u objetos.
     /// </summary>
+    /// <summary>
+    /// Convierte un JsonElement a BsonArray de forma segura.
+    /// Si el JSON no es válido o tiene formato incorrecto, lanza un error amigable
+    /// sin revelar detalles internos de MongoDB.
+    /// </summary>
     private static BsonArray JsonToBsonArray(JsonElement element)
     {
-        var json = element.GetRawText();
-        // Envuelve el array en un documento temporal para parsearlo con MongoDB
-        var wrapper = BsonDocument.Parse($"{{\"v\":{json}}}");
-        return wrapper["v"].AsBsonArray;
+        try
+        {
+            var json    = element.GetRawText();
+            var wrapper = BsonDocument.Parse($"{{\"v\":{json}}}");
+            return wrapper["v"].AsBsonArray;
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidOperationException)
+        {
+            throw new DomainException(
+                ApiErrors.ValidationFailed,
+                "El contenido del catálogo tiene un formato JSON inválido. Verifica la estructura.");
+        }
     }
 }
