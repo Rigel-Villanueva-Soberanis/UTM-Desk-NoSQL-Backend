@@ -1,5 +1,6 @@
 using Application.Common;
 using MongoDB.Driver;
+using StackExchange.Redis;
 using System.Net;
 
 namespace Api.Middlewares;
@@ -55,6 +56,19 @@ public class ExceptionMiddleware
         {
             // Error de MongoDB → mensaje genérico, los detalles solo van al log del servidor
             _logger.LogError(ex, "Error de MongoDB en {Path}", context.Request.Path);
+
+            context.Response.StatusCode = 503;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                success = false,
+                message = "No se pudo completar la operación. Intenta de nuevo más tarde.",
+                detalle = ObtenerDetalle(ex)   // solo en Desarrollo; en Producción es null
+            });
+        }
+        catch (Exception ex) when (ex is RedisException or RedisTimeoutException)
+        {
+            // Redis caído o lento (ej. al generar folios) → mensaje genérico, detalle solo en log / Desarrollo
+            _logger.LogError(ex, "Error de Redis en {Path}", context.Request.Path);
 
             context.Response.StatusCode = 503;
             await context.Response.WriteAsJsonAsync(new

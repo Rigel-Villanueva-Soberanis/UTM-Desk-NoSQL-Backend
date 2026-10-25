@@ -6,7 +6,7 @@ namespace Application.Validators.Catalogos;
 /// <summary>
 /// Catálogo <c>roles_sistema</c>.
 /// Estructura: [{ rol, requiere_clasificacion, clasificaciones_permitidas: [string] }]
-/// Pueden editar: Root, Administrativos y Soporte.
+/// Pueden editar: Root y Soporte de TI.
 /// Los roles son fijos (cada uno tiene sus pantallas): no se pueden agregar, quitar ni renombrar.
 /// Lo que sí se puede editar son las clasificaciones (subroles) y si son requeridas.
 /// </summary>
@@ -14,7 +14,7 @@ public class RolesSistemaValidator : CatalogoValidatorBase
 {
     public override string ClaveCatalogo => "roles_sistema";
 
-    public override IReadOnlyCollection<string> RolesEditores { get; } = ["root", "administrativos", "soporte"];
+    public override IReadOnlyCollection<string> RolesEditores { get; } = ["root", "soporte"];
 
     /// <summary>Cada rol se identifica por su nombre. Ej: PATCH /api/catalogos/roles_sistema/elementos/reportante</summary>
     public override string CampoIdentificador => "rol";

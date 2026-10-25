@@ -15,6 +15,15 @@ public static class SwaggerConfiguration
         {
             c.OperationFilter<ApiKeyOperationFilter>();
 
+            // Documentación tomada de los comentarios /// de controllers y DTOs
+            // (summary, remarks, response, example). Así no se llenan los controllers de atributos.
+            foreach (var archivo in new[] { "Api.xml", "Application.xml" })
+            {
+                var ruta = Path.Combine(AppContext.BaseDirectory, archivo);
+                if (File.Exists(ruta))
+                    c.IncludeXmlComments(ruta);
+            }
+
             // JWT Bearer en Swagger UI (el candadito 🔒)
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {

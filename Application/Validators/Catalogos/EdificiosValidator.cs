@@ -6,13 +6,13 @@ namespace Application.Validators.Catalogos;
 /// <summary>
 /// Catálogo <c>edificios</c> (áreas de atención).
 /// Estructura: [{ clave, edificio, salon }]
-/// Pueden editar: Root, Administrativos y Soporte.
+/// Pueden editar: Root y Soporte de TI.
 /// </summary>
 public class EdificiosValidator : CatalogoValidatorBase
 {
     public override string ClaveCatalogo => "edificios";
 
-    public override IReadOnlyCollection<string> RolesEditores { get; } = ["root", "administrativos", "soporte"];
+    public override IReadOnlyCollection<string> RolesEditores { get; } = ["root", "soporte"];
 
     protected override BsonValue ValidarContenido(BsonValue contenidoNuevo, BsonValue contenidoActual, List<ErrorDetalle> errores)
     {

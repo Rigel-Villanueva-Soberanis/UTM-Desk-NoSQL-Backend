@@ -48,7 +48,7 @@ public class AuthService
             throw AuthErrors.CredencialesInvalidas();
 
         // 4. Generar el token JWT
-        var token = GenerarToken(usuario.Id, usuario.Username, usuario.RolSistema, usuario.ClasificacionRol);
+        var token = GenerarToken(usuario.Id, usuario.Username, usuario.NombreCompleto, usuario.RolSistema, usuario.ClasificacionRol);
         var expiraEn = int.Parse(_configuration["Jwt:ExpiresInSeconds"] ?? "86400");
 
         return new LoginResponse
@@ -70,7 +70,7 @@ public class AuthService
 
     // ─── Generación del token ─────────────────────────────────────────────────
 
-    private string GenerarToken(string id, string username, string rol, string clasificacion)
+    private string GenerarToken(string id, string username, string nombreCompleto, string rol, string clasificacion)
     {
         var claveSecreta = _configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("JWT SecretKey no configurada.");
@@ -84,6 +84,7 @@ public class AuthService
         {
             new Claim(JwtRegisteredClaimNames.Sub,        id),
             new Claim(JwtRegisteredClaimNames.UniqueName, username),
+            new Claim("nombre_completo",                  nombreCompleto), // ← para datos_reportante de incidencias
             new Claim(ClaimTypes.Role,                    rol),          // ← para [Authorize(Roles="...")]
             new Claim("rol_sistema",                      rol),          // ← claim personalizado legible
             new Claim("clasificacion_rol",                clasificacion),

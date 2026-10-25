@@ -21,10 +21,16 @@ public static class DependencyInjection
         var mongoDatabaseName     = configuration["MongoDB:DatabaseName"]!;
         services.AddSingleton(new MongoDbContext(mongoConnectionString, mongoDatabaseName));
 
+        // Infraestructura — Redis en Docker (folios atómicos). Se conecta hasta el primer uso.
+        // appsettings.json → "ConnectionStrings": { "Redis": "localhost:6379" }
+        services.AddSingleton(new RedisContext(configuration.GetConnectionString("Redis")));
+
         // Repositorios e Interfaces
         services.AddScoped<IEntityRepository, EntityRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IIncidenciaRepository, IncidenciaRepository>();
+        services.AddScoped<IFolioRepository, FolioRepository>();
 
         // Validadores de catálogos (uno por catálogo editable: permisos + estructura)
         services.AddSingleton<ICatalogoValidator, RolesSistemaValidator>();
@@ -36,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<CatalogoService>();
         services.AddScoped<AuthService>();
         services.AddScoped<UsuarioService>();
+        services.AddScoped<IncidenciaService>();
 
         return services;
     }

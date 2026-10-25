@@ -53,8 +53,7 @@ public class CatalogoController : ControllerBase
 
     /// <summary>
     /// Reemplaza TODO el contenido de un catálogo.
-    /// roles_sistema: Root, Administrativos, Soporte · edificios: Root, Administrativos, Soporte ·
-    /// categorias_incidencia: Root, Soporte.
+    /// roles_sistema, edificios y categorias_incidencia: Root y Soporte de TI.
     /// </summary>
     [HttpPut("{claveCatalogo}")]
     public async Task<IActionResult> Update(string claveCatalogo, [FromBody] UpdateCatalogoRequest request)

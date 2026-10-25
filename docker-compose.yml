@@ -1,0 +1,29 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# UTM Desk NoSQL — Servicios locales con Docker
+#
+# Levantar:   docker compose up -d
+# Ver estado: docker compose ps
+# Apagar:     docker compose down        (los datos se conservan en el volumen)
+#
+# El backend se conecta con (appsettings.json): "ConnectionStrings": { "Redis": "localhost:6379" }
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  redis:
+    image: redis:7.4-alpine          # versión fija: todos usan el mismo Redis
+    container_name: utmdesk-redis
+    ports:
+      - "6379:6379"
+    # Persistencia AOF: cada cambio se guarda en disco, el contador de folios
+    # no se pierde al reiniciar el contenedor ni la computadora.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped          # arranca solo cuando se abre Docker
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-data:

@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Application</RootNamespace>
+    <!-- Genera el XML de los comentarios /// para que Swagger los muestre -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- 1591: no exigir comentario en todo lo público -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
