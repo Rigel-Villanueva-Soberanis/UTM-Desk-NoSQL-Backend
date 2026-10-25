@@ -1,4 +1,6 @@
 using Api.Common;
+using Application.Common.ErrorCatalog;
+using Application.Common.Seguridad;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Services;
@@ -21,20 +23,60 @@ public class UsuarioController : ControllerBase
         _service = service;
     }
 
-    /// <summary>
-    /// Obtiene todos los usuarios del sistema. (Solo soporte)
-    /// </summary>
+    /// <remarks>
+    /// Lista las cuentas del sistema con paginación y filtros.
+    ///
+    /// **Roles:** Soporte.
+    ///
+    /// - `busqueda`: busca a la vez en nombres, apellidos, usuario y correo.
+    /// - `nombres` / `apellidos`: búsqueda parcial (`apellidos` revisa paterno y materno).
+    /// - `rol`, `clasificacion`: valor exacto (ej. `técnico`, `redes`).
+    /// - `estadoCuenta`: `activo`, `inactivo` o `bloqueado`.
+    ///
+    /// Los textos no distinguen mayúsculas ni acentos (`jose` encuentra `José`).
+    /// Ordenado por nombres y apellido paterno. Máximo 50 por página.
+    ///
+    /// </remarks>
+    /// <response code="200">Página de usuarios.</response>
+    /// <response code="400">Filtros inválidos.</response>
+    /// <response code="401">Sin token o token inválido.</response>
+    /// <response code="403">El rol no puede ver las cuentas.</response>
     [HttpGet]
-    [Authorize(Roles = "soporte")]
-    public async Task<IActionResult> GetAll()
+    [Authorize(Roles = RolesSistema.Soporte)]
+    public async Task<IActionResult> GetAll([FromQuery] UsuarioFiltroRequest filtro)
     {
-        var resultado = await _service.GetAllAsync();
-        return Ok(ApiResponse<object>.Ok(resultado));
+        var resultado = await _service.GetAllAsync(filtro);
+        return Ok(ApiResponse<PaginadoResponse<UsuarioResponse>>.Ok(resultado));
     }
 
-    /// <summary>
+    /// <remarks>
+    /// Lista los técnicos disponibles para asignar una incidencia.
+    ///
+    /// **Roles:** Root, Soporte, Administrativos.
+    ///
+    /// Solo devuelve técnicos con cuenta `activo`, con datos mínimos:
+    /// `id` (el que se manda en `PATCH /api/incidencias/{id}/asignar-tecnico`), `nombreCompleto`,
+    /// `clasificacion` (especialidad) e `incidenciasActivas` (asignadas que no están resueltas ni canceladas).
+    ///
+    /// Filtros opcionales: `busqueda` (nombres y apellidos), `nombres`, `apellidos`, `clasificacion`.
+    /// Sin paginación. Ordenado de menor a mayor carga de trabajo.
+    ///
+    /// </remarks>
+    /// <response code="200">Lista de técnicos.</response>
+    /// <response code="400">Filtros inválidos.</response>
+    /// <response code="401">Sin token o token inválido.</response>
+    /// <response code="403">El rol no puede asignar técnicos.</response>
+    [HttpGet("tecnicos")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte + "," + RolesSistema.Administrativos)]
+    public async Task<IActionResult> GetTecnicos([FromQuery] TecnicoFiltroRequest filtro)
+    {
+        var resultado = await _service.GetTecnicosAsync(filtro);
+        return Ok(ApiResponse<List<TecnicoDisponibleResponse>>.Ok(resultado));
+    }
+
+    /// <remarks>
     /// Obtiene un usuario por su ID de MongoDB. (Solo soporte)
-    /// </summary>
+    /// </remarks>
     [HttpGet("{id}")]
     [Authorize(Roles = "soporte")]
     public async Task<IActionResult> GetById(string id)
@@ -43,9 +85,9 @@ public class UsuarioController : ControllerBase
         return Ok(ApiResponse<object>.Ok(resultado));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Crea un nuevo usuario en el sistema. (Solo soporte)
-    /// </summary>
+    /// </remarks>
     [HttpPost]
     [Authorize(Roles = "soporte")]
     public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request)
@@ -54,9 +96,9 @@ public class UsuarioController : ControllerBase
         return StatusCode(201, ApiResponse<object>.Ok(creado, "Usuario creado exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Actualiza los datos de un usuario por su ID. (Solo soporte)
-    /// </summary>
+    /// </remarks>
     [HttpPut("{id}")]
     [Authorize(Roles = "soporte")]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateUsuarioRequest request)
@@ -65,9 +107,9 @@ public class UsuarioController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null!, "Usuario actualizado exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Cambia la contraseña de cualquier usuario sin requerir la anterior. (Solo soporte)
-    /// </summary>
+    /// </remarks>
     [HttpPatch("{id}/password")]
     [Authorize(Roles = "soporte")]
     public async Task<IActionResult> AdminCambiarPassword(string id, [FromBody] AdminCambiarPasswordRequest request)
@@ -76,9 +118,9 @@ public class UsuarioController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null!, "Contraseña actualizada exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Elimina un usuario por su ID. (Solo soporte)
-    /// </summary>
+    /// </remarks>
     [HttpDelete("{id}")]
     [Authorize(Roles = "soporte")]
     public async Task<IActionResult> Delete(string id)
@@ -87,9 +129,9 @@ public class UsuarioController : ControllerBase
         return Ok(ApiResponse<object>.Ok(null!, "Usuario eliminado exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Permite al usuario autenticado editar su propio perfil (nombre y correo).
-    /// </summary>
+    /// </remarks>
     [HttpPut("mi-perfil")]
     public async Task<IActionResult> UpdateMiPerfil([FromBody] UpdateMiPerfilRequest request)
     {
@@ -98,9 +140,9 @@ public class UsuarioController : ControllerBase
         return Ok(ApiResponse<UsuarioResponse>.Ok(usuarioActualizado, "Perfil actualizado exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Permite al usuario autenticado cambiar su propia contraseña.
-    /// </summary>
+    /// </remarks>
     [HttpPatch("mi-password")]
     public async Task<IActionResult> CambiarMiPassword([FromBody] CambiarMiPasswordRequest request)
     {
@@ -115,8 +157,8 @@ public class UsuarioController : ControllerBase
               ?? User.FindFirstValue("sub");
 
         if (string.IsNullOrWhiteSpace(id))
-            throw new Application.Common.DomainException(
-                Application.Common.ApiErrors.Unauthorized,
+            throw new DomainException(
+                ApiErrors.Unauthorized,
                 "No se pudo identificar al usuario desde el token.");
 
         return id;

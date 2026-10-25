@@ -1,6 +1,6 @@
-using AutoMapper;
 using Application.DTOs.Responses;
 using Domain;
+using AutoMapper;
 using MongoDB.Bson;
 
 namespace Application.Profiles;
@@ -27,7 +27,14 @@ public class IncidenciaProfile : Profile
             .ForMember(dest => dest.Edificio,         opt => opt.MapFrom(src => src.Ubicacion.Edificio))
             .ForMember(dest => dest.Aula,             opt => opt.MapFrom(src => src.Ubicacion.Aula))
             .ForMember(dest => dest.NombreReportante, opt => opt.MapFrom(src => src.DatosReportante.Nombre))
+            .ForMember(dest => dest.Asignada,         opt => opt.MapFrom(src => src.TecnicoAsignado != null))
+            .ForMember(dest => dest.IdTecnico,        opt => opt.MapFrom(src => src.TecnicoAsignado != null ? src.TecnicoAsignado.IdUsuario : null))
             .ForMember(dest => dest.NombreTecnico,    opt => opt.MapFrom(src => src.TecnicoAsignado != null ? src.TecnicoAsignado.Nombre : null))
             .ForMember(dest => dest.FechaCreacion,    opt => opt.MapFrom(src => src.Fechas.Creacion));
+
+        // Resultado de la búsqueda full-text: igual que el resumen; Relevancia la pone el servicio
+        CreateMap<Incidencia, IncidenciaBusquedaResponse>()
+            .IncludeBase<Incidencia, IncidenciaResumenResponse>()
+            .ForMember(dest => dest.Relevancia, opt => opt.Ignore());
     }
 }

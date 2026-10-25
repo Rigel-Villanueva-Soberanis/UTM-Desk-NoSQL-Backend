@@ -25,4 +25,19 @@
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
+  <!--
+    Al compilar en Debug (▶ en Visual Studio) enciende Redis en Docker con docker-compose.yml.
+    Si ya está encendido no hace nada. Requiere Docker Desktop abierto; si no lo está,
+    solo muestra una advertencia y el proyecto compila igual.
+  -->
+  <PropertyGroup>
+    <RaizSolucion>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/..'))</RaizSolucion>
+  </PropertyGroup>
+
+  <Target Name="IniciarRedisDocker" BeforeTargets="Build"
+          Condition="'$(Configuration)' == 'Debug' And '$(DesignTimeBuild)' != 'true' And Exists('$(RaizSolucion)/docker-compose.yml')">
+    <Message Importance="high" Text="Iniciando Redis (docker compose up -d)..." />
+    <Exec Command="docker compose up -d" WorkingDirectory="$(RaizSolucion)" ContinueOnError="true" />
+  </Target>
+
 </Project>

@@ -1,6 +1,8 @@
-using System.Globalization;
-using Application.Common;
+using Application.Common.ErrorCatalog;
+using Application.Common.ErrorsIncidencias;
+using Application.Common.Utilidades;
 using MongoDB.Bson;
+using System.Globalization;
 
 namespace Application.Validators.Incidencias;
 
@@ -10,7 +12,7 @@ namespace Application.Validators.Incidencias;
 ///   • Solo se aceptan los campos definidos para la categoría.
 ///   • "requerido": true → el campo es obligatorio.
 ///   • tipo_input: text / textarea → texto · number → número · select → una de las opciones · date → fecha.
-/// Devuelve el detalle limpio (valores normalizados) y agrega a <paramref name="errores"/> lo que no cumpla.
+/// Devuelve el detalle limpio (valores normalizados) y agrega a la lista de errores lo que no cumpla.
 /// </summary>
 public static class DetalleEspecificoValidator
 {
@@ -27,7 +29,7 @@ public static class DetalleEspecificoValidator
             enviado = detalle.AsBsonDocument;
         else
         {
-            errores.Add(new ErrorDetalle(Raiz, "Debe ser un objeto con los campos de la categoría."));
+            errores.Add(DetalleEspecificoErrors.NoEsObjeto(Raiz));
             return resultado;
         }
 
@@ -41,9 +43,9 @@ public static class DetalleEspecificoValidator
         foreach (var nombre in enviado.Names)
         {
             if (clavesDefinidas.Contains(nombre)) continue;
-            errores.Add(new ErrorDetalle($"{Raiz}.{nombre}", clavesDefinidas.Count == 0
-                ? "Esta categoría no tiene campos adicionales."
-                : $"Campo no definido para la categoría. Campos válidos: {string.Join(", ", clavesDefinidas)}."));
+            errores.Add(clavesDefinidas.Count == 0
+                ? DetalleEspecificoErrors.SinCamposAdicionales($"{Raiz}.{nombre}")
+                : DetalleEspecificoErrors.CampoNoDefinido($"{Raiz}.{nombre}", clavesDefinidas));
         }
 
         // Campos definidos
@@ -56,7 +58,7 @@ public static class DetalleEspecificoValidator
 
             if (!enviado.Contains(clave) || EstaVacio(enviado[clave]))
             {
-                if (requerido) errores.Add(new ErrorDetalle(ruta, "Es obligatorio."));
+                if (requerido) errores.Add(DetalleEspecificoErrors.Obligatorio(ruta));
                 continue;
             }
 
@@ -89,13 +91,13 @@ public static class DetalleEspecificoValidator
     {
         if (!valor.IsString)
         {
-            errores.Add(new ErrorDetalle(ruta, "Debe ser texto."));
+            errores.Add(DetalleEspecificoErrors.DebeSerTexto(ruta));
             return null;
         }
         var texto = valor.AsString.Trim();
         if (texto.Length > maxLongitud)
         {
-            errores.Add(new ErrorDetalle(ruta, $"No puede tener más de {maxLongitud} caracteres."));
+            errores.Add(DetalleEspecificoErrors.MuyLargo(ruta, maxLongitud));
             return null;
         }
         return new BsonString(texto);
@@ -109,7 +111,7 @@ public static class DetalleEspecificoValidator
         if (valor.IsString && double.TryParse(valor.AsString.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var numero))
             return new BsonDouble(numero);
 
-        errores.Add(new ErrorDetalle(ruta, "Debe ser un número."));
+        errores.Add(DetalleEspecificoErrors.DebeSerNumero(ruta));
         return null;
     }
 
@@ -126,7 +128,7 @@ public static class DetalleEspecificoValidator
 
         if (elegida is null)
         {
-            errores.Add(new ErrorDetalle(ruta, $"Debe ser una de estas opciones: {string.Join(", ", opciones)}."));
+            errores.Add(DetalleEspecificoErrors.OpcionNoValida(ruta, opciones));
             return null;
         }
         return new BsonString(elegida);
@@ -139,7 +141,7 @@ public static class DetalleEspecificoValidator
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var fecha))
             return new BsonDateTime(fecha);
 
-        errores.Add(new ErrorDetalle(ruta, "Debe ser una fecha válida (ej. 2026-10-24)."));
+        errores.Add(DetalleEspecificoErrors.FechaInvalida(ruta));
         return null;
     }
 }

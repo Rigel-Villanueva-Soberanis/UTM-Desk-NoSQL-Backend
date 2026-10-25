@@ -1,6 +1,6 @@
-using Application.Common;
+using Application.Common.ErrorCatalog;
 
-namespace Application.Common.ErrorCatalog;
+namespace Application.Common.ErrorsCatalogos;
 
 public static class CatalogoErrors
 {

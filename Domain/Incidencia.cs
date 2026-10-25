@@ -1,5 +1,5 @@
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 
 namespace Domain;
 
@@ -135,12 +135,27 @@ public class TecnicoExterno
 [BsonIgnoreExtraElements]
 public class SeguimientoIncidencia
 {
+    /// <summary>
+    /// Tipo de evento: creacion, evidencia, asignacion, reasignacion, cambio_estado, nota, horas,
+    /// etiquetas, servicio_externo, edicion.
+    /// "nota" es la única manual (la escribe el técnico); las demás las genera el sistema.
+    /// </summary>
+    [BsonElement("tipo")]
+    [BsonIgnoreIfNull]
+    public string? Tipo { get; set; }
+
     [BsonElement("autor")]
     public UsuarioReferencia Autor { get; set; } = new();
 
     [BsonElement("accion")]
     public string Accion { get; set; } = string.Empty;
 
+    /// <summary>Estado antes del evento (solo en cambios de estado).</summary>
+    [BsonElement("estado_anterior")]
+    [BsonIgnoreIfNull]
+    public string? EstadoAnterior { get; set; }
+
+    /// <summary>Estado de la incidencia después del evento.</summary>
     [BsonElement("estado_reportado")]
     public string? EstadoReportado { get; set; }
 
@@ -155,8 +170,18 @@ public class EvidenciaIncidencia
     [BsonElement("nombre_archivo")]
     public string NombreArchivo { get; set; } = string.Empty;
 
+    /// <summary>URL del archivo en Cloudinary.</summary>
     [BsonElement("url_storage")]
     public string UrlStorage { get; set; } = string.Empty;
+
+    /// <summary>Identificador del archivo en Cloudinary (sirve para administrarlo o borrarlo).</summary>
+    [BsonElement("public_id")]
+    [BsonIgnoreIfNull]
+    public string? PublicId { get; set; }
+
+    [BsonElement("formato")]
+    [BsonIgnoreIfNull]
+    public string? Formato { get; set; }
 
     [BsonElement("subido_por")]
     public UsuarioReferencia? SubidoPor { get; set; }

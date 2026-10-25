@@ -1,10 +1,12 @@
-using Application.Common;
-using Application.Common.ErrorCatalog;
+using Application.Common.ErrorsCatalogos;
+using Application.Common.ErrorsUsuarios;
+using Application.Common.Utilidades;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
-using AutoMapper;
+using Application.Validators.Usuarios;
 using Domain;
+using AutoMapper;
 using MongoDB.Bson;
 
 namespace Application.Services;
@@ -19,21 +21,66 @@ public class UsuarioService
 
     private readonly IUsuarioRepository _repository;
     private readonly ICatalogoRepository _catalogoRepository;
+    private readonly IIncidenciaRepository _incidenciaRepository;
     private readonly IMapper _mapper;
 
-    public UsuarioService(IUsuarioRepository repository, ICatalogoRepository catalogoRepository, IMapper mapper)
+    public UsuarioService(
+        IUsuarioRepository repository,
+        ICatalogoRepository catalogoRepository,
+        IIncidenciaRepository incidenciaRepository,
+        IMapper mapper)
     {
         _repository = repository;
         _catalogoRepository = catalogoRepository;
+        _incidenciaRepository = incidenciaRepository;
         _mapper = mapper;
     }
 
     // ─── CRUD (solo Soporte TI) ───────────────────────────────────────────────
 
-    public async Task<IEnumerable<UsuarioResponse>> GetAllAsync()
+    /// <summary>
+    /// Listado paginado de cuentas con filtros (nombres, apellidos, rol, clasificación, estado).
+    /// </summary>
+    public async Task<PaginadoResponse<UsuarioResponse>> GetAllAsync(UsuarioFiltroRequest filtro)
     {
-        var usuarios = await _repository.GetAllAsync();
-        return _mapper.Map<IEnumerable<UsuarioResponse>>(usuarios);
+        var consulta = UsuarioValidator.ValidarFiltros(filtro);
+
+        var (items, total) = await _repository.GetPaginadoAsync(consulta);
+
+        return new PaginadoResponse<UsuarioResponse>
+        {
+            Items        = _mapper.Map<List<UsuarioResponse>>(items),
+            Pagina       = consulta.Pagina,
+            TamanoPagina = consulta.TamanoPagina,
+            Total        = total,
+            TotalPaginas = (int)Math.Ceiling(total / (double)consulta.TamanoPagina)
+        };
+    }
+
+    // ─── Selector de técnicos (Root, Soporte, Administrativos) ───────────────
+
+    /// <summary>
+    /// Técnicos activos con su carga de trabajo (incidencias no resueltas ni canceladas).
+    /// Ordenados de menor a mayor carga para facilitar la asignación.
+    /// </summary>
+    public async Task<List<TecnicoDisponibleResponse>> GetTecnicosAsync(TecnicoFiltroRequest filtro)
+    {
+        var consulta = UsuarioValidator.ValidarFiltrosTecnicos(filtro);
+
+        var tecnicos = await _repository.GetTecnicosActivosAsync(consulta);
+        var carga    = await _incidenciaRepository.ContarActivasPorTecnicoAsync(tecnicos.Select(t => t.Id));
+
+        return tecnicos
+            .Select(t => new TecnicoDisponibleResponse
+            {
+                Id                 = t.Id,
+                NombreCompleto     = t.NombreCompleto,
+                Clasificacion      = string.IsNullOrWhiteSpace(t.ClasificacionRol) ? null : t.ClasificacionRol,
+                IncidenciasActivas = carga.GetValueOrDefault(t.Id)
+            })
+            .OrderBy(t => t.IncidenciasActivas)
+            .ThenBy(t => t.NombreCompleto)
+            .ToList();
     }
 
     public async Task<UsuarioResponse> GetByIdAsync(string id)

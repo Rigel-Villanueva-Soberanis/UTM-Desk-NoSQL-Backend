@@ -54,8 +54,11 @@ public class TecnicoExternoResponse
 
 public class SeguimientoResponse
 {
+    /// <summary>creacion, evidencia, asignacion, reasignacion, cambio_estado, nota (manual), horas, etiquetas, servicio_externo o edicion.</summary>
+    public string? Tipo { get; set; }
     public UsuarioReferenciaResponse Autor { get; set; } = new();
     public string Accion { get; set; } = string.Empty;
+    public string? EstadoAnterior { get; set; }
     public string? EstadoReportado { get; set; }
     public DateTime Fecha { get; set; }
 }
@@ -64,6 +67,8 @@ public class EvidenciaResponse
 {
     public string NombreArchivo { get; set; } = string.Empty;
     public string UrlStorage { get; set; } = string.Empty;
+    public string? PublicId { get; set; }
+    public string? Formato { get; set; }
     public UsuarioReferenciaResponse? SubidoPor { get; set; }
     public DateTime? FechaCarga { get; set; }
 }

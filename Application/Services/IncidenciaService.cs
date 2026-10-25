@@ -1,45 +1,45 @@
-using Application.Common;
+using Application.Common.Bitacora;
 using Application.Common.ErrorCatalog;
+using Application.Common.ErrorsIncidencias;
+using Application.Common.Seguridad;
+using Application.Common.Utilidades;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
+using Application.Validators.Evidencias;
 using Application.Validators.Incidencias;
-using AutoMapper;
 using Domain;
+using AutoMapper;
 using MongoDB.Bson;
-using System.Text.Json;
 
 namespace Application.Services;
 
 /// <summary>
-/// Casos de uso de incidencias — Fase 1: registro con folio atómico y consultas base.
+/// Casos de uso de incidencias. Solo orquesta: valida (IncidenciaValidator), pide el folio (FolioService),
+/// llama al repositorio y mapea la respuesta.
+/// Fase 1: registro con folio atómico y consultas base.
+/// Fase 2: evidencias adjuntas (archivos en Cloudinary).
 /// </summary>
 public class IncidenciaService
 {
-    private const string CatalogoCategorias = "categorias_incidencia";
-    private const string CatalogoEdificios  = "edificios";
-    private const string EstadoInicial      = "abierta";
-    private const string PrioridadDefault   = "media";
-    private const int    MaxIntentosFolio   = 3;
-
-    private static readonly string[] Estados     = ["abierta", "en proceso", "por autorizar", "resuelta", "cancelada"];
-    private static readonly string[] Prioridades = ["baja", "media", "alta", "critica"];
-
     private readonly IIncidenciaRepository _repository;
-    private readonly ICatalogoRepository _catalogoRepository;
-    private readonly IFolioRepository _folioRepository;
+    private readonly IArchivoRepository _archivoRepository;
+    private readonly IncidenciaValidator _validator;
+    private readonly FolioService _folioService;
     private readonly IMapper _mapper;
 
     public IncidenciaService(
         IIncidenciaRepository repository,
-        ICatalogoRepository catalogoRepository,
-        IFolioRepository folioRepository,
+        IArchivoRepository archivoRepository,
+        IncidenciaValidator validator,
+        FolioService folioService,
         IMapper mapper)
     {
-        _repository         = repository;
-        _catalogoRepository = catalogoRepository;
-        _folioRepository    = folioRepository;
-        _mapper             = mapper;
+        _repository        = repository;
+        _archivoRepository = archivoRepository;
+        _validator         = validator;
+        _folioService      = folioService;
+        _mapper            = mapper;
     }
 
     // ─── POST /api/incidencias ──────────────────────────────────────────────
@@ -51,67 +51,20 @@ public class IncidenciaService
     /// </summary>
     public async Task<IncidenciaResponse> CreateAsync(CreateIncidenciaRequest request, UsuarioActual usuario)
     {
-        NoSqlSanitizer.ValidarTodos(
-            (request.Titulo,         "titulo"),
-            (request.Categoria,      "categoria"),
-            (request.ClaveUbicacion, "claveUbicacion"),
-            (request.Prioridad,      "prioridad")
-        );
-
-        var errores = new List<ErrorDetalle>();
-
-        // Prioridad (opcional, por defecto "media")
-        var prioridad = string.IsNullOrWhiteSpace(request.Prioridad)
-            ? PrioridadDefault
-            : TextoNormalizer.SinAcentos(request.Prioridad);
-        if (!Prioridades.Contains(prioridad))
-            errores.Add(new ErrorDetalle("prioridad", $"'{request.Prioridad}' no es válida. Opciones: {string.Join(", ", Prioridades)}."));
-
-        // Categoría + detalle específico (contra categorias_incidencia)
-        var categorias = await ObtenerCatalogoAsync(CatalogoCategorias);
-        var categoria  = BuscarElemento(categorias, request.Categoria);
-        var detalle    = new BsonDocument();
-
-        if (categoria is null)
-        {
-            errores.Add(new ErrorDetalle("categoria", $"La categoría '{request.Categoria}' no existe. Opciones: {string.Join(", ", Claves(categorias))}."));
-        }
-        else
-        {
-            var campos = categoria.Contains("campos_dinamicos") && categoria["campos_dinamicos"].IsBsonArray
-                ? categoria["campos_dinamicos"].AsBsonArray
-                : new BsonArray();
-            detalle = DetalleEspecificoValidator.Validar(JsonToBsonValue(request.DetalleEspecifico), campos, errores);
-        }
-
-        // Ubicación (contra edificios)
-        var edificios = await ObtenerCatalogoAsync(CatalogoEdificios);
-        var lugar     = BuscarElemento(edificios, request.ClaveUbicacion);
-        if (lugar is null)
-            errores.Add(new ErrorDetalle("claveUbicacion", $"La ubicación '{request.ClaveUbicacion}' no existe en el catálogo de edificios."));
-
-        if (errores.Count > 0)
-            throw IncidenciaErrors.DatosInvalidos(errores);
+        var datos = await _validator.ValidarCreacionAsync(request);
 
         var ahora = DateTime.UtcNow;
-
-        var autor = new UsuarioReferencia { IdUsuario = usuario.Id, Nombre = usuario.Nombre, Rol = usuario.Rol };
 
         var incidencia = new Incidencia
         {
             Id                = ObjectId.GenerateNewId().ToString(),
             Titulo            = request.Titulo.Trim(),
             Descripcion       = request.Descripcion.Trim(),
-            Categoria         = categoria!["clave"].AsString,
-            DetalleEspecifico = detalle,
-            Estado            = EstadoInicial,
-            Prioridad         = prioridad,
-            Ubicacion = new UbicacionIncidencia
-            {
-                Clave    = lugar!["clave"].AsString,
-                Edificio = lugar["edificio"].AsString,
-                Aula     = lugar.Contains("salon") && lugar["salon"].IsString ? lugar["salon"].AsString : null
-            },
+            Categoria         = datos.Categoria,
+            DetalleEspecifico = datos.Detalle,
+            Estado            = IncidenciaValidator.EstadoInicial,
+            Prioridad         = datos.Prioridad,
+            Ubicacion         = datos.Ubicacion,
             DatosReportante = new DatosReportante
             {
                 IdUsuario = usuario.Id,
@@ -122,21 +75,12 @@ public class IncidenciaService
             TecnicoExterno  = null,
             HorasInvertidas = 0,
             Tags            = [],
-            HistorialSeguimiento =
-            [
-                new SeguimientoIncidencia
-                {
-                    Autor           = autor,
-                    Accion          = "Incidencia registrada en el sistema.",
-                    EstadoReportado = EstadoInicial,
-                    Fecha           = ahora
-                }
-            ],
+            HistorialSeguimiento = [BitacoraIncidencia.Creacion(usuario, IncidenciaValidator.EstadoInicial)],
             EvidenciasAdjuntas = [],
             Fechas = new FechasIncidencia { Creacion = ahora, Resolucion = null }
         };
 
-        var creada = await GuardarConFolioAsync(incidencia, AnioLocal(ahora));
+        var creada = await _folioService.GuardarConFolioAsync(incidencia);
         return _mapper.Map<IncidenciaResponse>(creada);
     }
 
@@ -145,39 +89,27 @@ public class IncidenciaService
     /// <summary>
     /// Listado paginado con filtros.
     ///   • Reportante → SOLO sus incidencias (RF-04), sin importar lo que mande el cliente.
-    ///   • Técnico    → cola global de trabajo (RF-05).
+    ///   • Técnico    → SOLO las incidencias que tiene asignadas.
     ///   • Demás roles → lista global.
     /// </summary>
     public async Task<PaginadoResponse<IncidenciaResumenResponse>> GetAllAsync(IncidenciaFiltroRequest filtro, UsuarioActual usuario)
     {
-        NoSqlSanitizer.ValidarTodos(
-            (filtro.Estado,    "estado"),
-            (filtro.Prioridad, "prioridad"),
-            (filtro.Categoria, "categoria"),
-            (filtro.Edificio,  "edificio")
-        );
-
-        var errores = new List<ErrorDetalle>();
-
-        var estado = ValorDeLista(filtro.Estado, Estados);
-        if (!string.IsNullOrWhiteSpace(filtro.Estado) && estado is null)
-            errores.Add(new ErrorDetalle("estado", $"'{filtro.Estado}' no es válido. Opciones: {string.Join(", ", Estados)}."));
-
-        var prioridad = ValorDeLista(filtro.Prioridad, Prioridades);
-        if (!string.IsNullOrWhiteSpace(filtro.Prioridad) && prioridad is null)
-            errores.Add(new ErrorDetalle("prioridad", $"'{filtro.Prioridad}' no es válida. Opciones: {string.Join(", ", Prioridades)}."));
-
-        if (errores.Count > 0)
-            throw IncidenciaErrors.FiltrosInvalidos(errores);
+        var filtros = IncidenciaValidator.ValidarFiltros(filtro);
 
         var consulta = new IncidenciaConsulta(
             Pagina:       filtro.Pagina,
             TamanoPagina: filtro.TamanoPagina,
             IdReportante: usuario.EsRol(RolesSistema.Reportante) ? usuario.Id : null,   // RF-04
-            Estado:       estado,
-            Prioridad:    prioridad,
-            Categoria:    string.IsNullOrWhiteSpace(filtro.Categoria) ? null : TextoNormalizer.NormalizarClave(filtro.Categoria),
-            Edificio:     string.IsNullOrWhiteSpace(filtro.Edificio) ? null : filtro.Edificio.Trim());
+            IdTecnico:    usuario.EsRol(RolesSistema.Tecnico)    ? usuario.Id : null,
+            Estado:       filtros.Estado,
+            Prioridad:    filtros.Prioridad,
+            Categoria:    filtros.Categoria,
+            Edificio:     filtros.Edificio,
+            Asignada:     filtro.Asignada,
+            Tag:          filtros.Tag,
+            ConProveedorExterno: filtro.ConProveedorExterno,
+            Desde:        filtros.Desde,
+            Hasta:        filtros.Hasta);
 
         var (items, total) = await _repository.GetPaginadoAsync(consulta);
 
@@ -196,135 +128,105 @@ public class IncidenciaService
     /// <summary>
     /// Expediente completo en una sola lectura por _id (RNF-01, RNF-02).
     ///   • Reportante → solo si es el creador.
-    ///   • Técnico y demás roles → cualquier incidencia (el técnico la revisa desde la cola global).
+    ///   • Técnico    → solo si es el técnico asignado.
+    ///   • Demás roles → cualquier incidencia.
     /// </summary>
     public async Task<IncidenciaResponse> GetByIdAsync(string id, UsuarioActual usuario)
     {
-        if (!ObjectId.TryParse(id, out _))
-            throw IncidenciaErrors.IdInvalido();
+        IncidenciaValidator.ValidarId(id);
 
         var incidencia = await _repository.GetByIdAsync(id)
             ?? throw IncidenciaErrors.NotFound();
 
-        if (usuario.EsRol(RolesSistema.Reportante) && incidencia.DatosReportante.IdUsuario != usuario.Id)
+        if (!IncidenciaValidator.PuedeAcceder(incidencia, usuario))
             throw IncidenciaErrors.SinAcceso();
 
         return _mapper.Map<IncidenciaResponse>(incidencia);
     }
 
+    // ─── PATCH /api/incidencias/{id}/evidencias ─────────────────────────────
+
+    /// <summary>
+    /// Liga a la incidencia de 1 a 3 archivos ya subidos a Cloudinary con $push + $each sobre evidencias_adjuntas (RF-19).
+    /// Inyecta los datos del usuario (del token) y la fecha actual.
+    ///   • Reportante → solo en sus propias incidencias (evidencia inicial).
+    ///   • Técnico    → solo en las incidencias que tiene asignadas (evidencia de reparación).
+    ///   • Root       → en cualquiera.
+    /// Los archivos deben estar en la carpeta del propio usuario y no estar ya ligados.
+    /// Límite por rol en cada incidencia: Reportante 3 evidencias suyas, Técnico 3 suyas (Root sin límite).
+    /// </summary>
+    public async Task<List<EvidenciaResponse>> AgregarEvidenciasAsync(string id, AgregarEvidenciasRequest request, UsuarioActual usuario)
+    {
+        IncidenciaValidator.ValidarId(id);
+
+        var incidencia = await _repository.GetByIdAsync(id)
+            ?? throw IncidenciaErrors.NotFound();
+
+        if (!IncidenciaValidator.PuedeAcceder(incidencia, usuario))
+            throw EvidenciaErrors.SinPermiso();
+
+        if (IncidenciaValidator.EstaCerrada(incidencia.Estado))
+            throw EvidenciaErrors.EstadoNoPermite(incidencia.Estado);
+
+        var yaLigadas = incidencia.EvidenciasAdjuntas
+            .Where(e => e.PublicId is not null)
+            .Select(e => e.PublicId!)
+            .ToList();
+
+        var errores    = new List<ErrorDetalle>();
+        var validadas  = EvidenciaValidator.ValidarReferencias(request.Evidencias, usuario.Id, errores, yaLigadas);
+
+        if (errores.Count > 0)
+            throw EvidenciaErrors.DatosInvalidos(errores);
+
+        // Límite por rol: cuenta solo las evidencias que ya subió alguien de ese mismo rol
+        var limite = EvidenciaValidator.LimiteDeRol(usuario.Rol);
+        if (limite is not null)
+        {
+            var actuales = incidencia.EvidenciasAdjuntas.Count(e => TextoNormalizer.Iguales(e.SubidoPor?.Rol, usuario.Rol));
+            if (actuales + validadas.Count > limite.Value)
+                throw EvidenciaErrors.LimitePorRol(usuario.Rol, limite.Value, actuales);
+        }
+
+        var (evidencias, bitacora) = CrearEvidencias(validadas, usuario, incidencia.Estado);
+
+        _ = await _repository.AplicarCambiosAsync(id, new CambiosIncidencia
+        {
+            EstadoEsperado   = incidencia.Estado,
+            EvidenciasNuevas = evidencias,
+            Bitacora         = bitacora
+        }) ?? throw IncidenciaErrors.CambioSimultaneo();
+
+        return _mapper.Map<List<EvidenciaResponse>>(evidencias);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    // ─── Folio ───────────────────────────────────────────────────────────────
-
     /// <summary>
-    /// Asigna el folio y guarda. El folio se pide hasta que todo es válido (para no "gastar" números).
-    /// Si Mongo rechaza el folio por repetido (Redis perdió su contador), se resincroniza y se reintenta.
+    /// Convierte las evidencias validadas en subdocumentos (firmados por el usuario y con fecha)
+    /// y arma una entrada de bitácora por cada una.
     /// </summary>
-    private async Task<Incidencia> GuardarConFolioAsync(Incidencia incidencia, int anio)
+    private (List<EvidenciaIncidencia> Evidencias, List<SeguimientoIncidencia> Bitacora) CrearEvidencias(
+        IEnumerable<EvidenciaValidada> validadas, UsuarioActual usuario, string estado)
     {
-        for (var intento = 1; intento <= MaxIntentosFolio; intento++)
+        var evidencias = new List<EvidenciaIncidencia>();
+        var bitacora   = new List<SeguimientoIncidencia>();
+
+        foreach (var validada in validadas)
         {
-            incidencia.Folio = await GenerarFolioAsync(anio);
-            try
+            evidencias.Add(new EvidenciaIncidencia
             {
-                return await _repository.CreateAsync(incidencia);
-            }
-            catch (FolioDuplicadoException)
-            {
-                await SincronizarContadorAsync(anio);
-            }
+                NombreArchivo = validada.NombreArchivo,
+                UrlStorage    = _archivoRepository.ConstruirUrl(validada.PublicId, validada.Formato),
+                PublicId      = validada.PublicId,
+                Formato       = validada.Formato,
+                SubidoPor     = BitacoraIncidencia.Autor(usuario),
+                FechaCarga    = DateTime.UtcNow
+            });
+
+            bitacora.Add(BitacoraIncidencia.Evidencia(usuario, validada.NombreArchivo, estado));
         }
-        throw IncidenciaErrors.FolioNoAsignado();
-    }
 
-    /// <summary>
-    /// Folio INC-AAAA-XXXX con Redis INCR (una llave por año, así se reinicia cada año).
-    /// Si el contador sale en 1 puede ser un año nuevo o que Redis perdió sus datos:
-    /// se revisa en Mongo el último folio del año y, si existe, se continúa desde ahí.
-    /// </summary>
-    private async Task<string> GenerarFolioAsync(int anio)
-    {
-        var clave       = ClaveContador(anio);
-        var consecutivo = await _folioRepository.IncrementarAsync(clave);
-
-        if (consecutivo == 1 && await SincronizarContadorAsync(anio))
-            consecutivo = await _folioRepository.IncrementarAsync(clave);
-
-        return $"{PrefijoFolio(anio)}{consecutivo:D4}";
-    }
-
-    /// <summary>
-    /// Pone el contador de Redis al nivel del último folio guardado en Mongo para ese año.
-    /// Devuelve true si encontró folios existentes.
-    /// </summary>
-    private async Task<bool> SincronizarContadorAsync(int anio)
-    {
-        var prefijo = PrefijoFolio(anio);
-        var ultimo  = await _repository.ObtenerUltimoFolioAsync(prefijo);
-
-        if (ultimo is null || !long.TryParse(ultimo[prefijo.Length..], out var numero))
-            return false;
-
-        await _folioRepository.AsegurarMinimoAsync(ClaveContador(anio), numero);
-        return true;
-    }
-
-    private static string PrefijoFolio(int anio)  => $"INC-{anio}-";
-    private static string ClaveContador(int anio) => $"utmdesk:folio:incidencias:{anio}";
-
-    /// <summary>Año según la hora de México (para que el 31 de diciembre en la noche no salte de año).</summary>
-    private static int AnioLocal(DateTime ahoraUtc)
-    {
-        try
-        {
-            var zona = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
-            return TimeZoneInfo.ConvertTimeFromUtc(ahoraUtc, zona).Year;
-        }
-        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
-        {
-            return ahoraUtc.Year;
-        }
-    }
-
-    private async Task<Catalogo> ObtenerCatalogoAsync(string clave)
-        => await _catalogoRepository.GetByClaveAsync(clave)
-           ?? throw IncidenciaErrors.CatalogoNoDisponible(clave);
-
-    /// <summary>Busca un elemento del catálogo por su "clave" (ignora mayúsculas, espacios y acentos).</summary>
-    private static BsonDocument? BuscarElemento(Catalogo catalogo, string? clave)
-    {
-        if (!catalogo.Contenido.IsBsonArray || string.IsNullOrWhiteSpace(clave)) return null;
-
-        var buscada = TextoNormalizer.NormalizarClave(clave);
-        return catalogo.Contenido.AsBsonArray
-            .OfType<BsonDocument>()
-            .FirstOrDefault(d => d.Contains("clave") && d["clave"].IsString
-                                 && TextoNormalizer.NormalizarClave(d["clave"].AsString) == buscada);
-    }
-
-    private static IEnumerable<string> Claves(Catalogo catalogo)
-        => catalogo.Contenido.IsBsonArray
-            ? catalogo.Contenido.AsBsonArray.OfType<BsonDocument>()
-                .Where(d => d.Contains("clave") && d["clave"].IsString)
-                .Select(d => d["clave"].AsString)
-            : [];
-
-    /// <summary>Devuelve el valor oficial de la lista que coincide (ignora mayúsculas y acentos), o null.</summary>
-    private static string? ValorDeLista(string? valor, string[] lista)
-        => string.IsNullOrWhiteSpace(valor) ? null : lista.FirstOrDefault(v => TextoNormalizer.Iguales(v, valor));
-
-    private static BsonValue JsonToBsonValue(JsonElement element)
-    {
-        if (element.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
-            return BsonNull.Value;
-
-        try
-        {
-            return BsonDocument.Parse($"{{\"v\":{element.GetRawText()}}}")["v"];
-        }
-        catch (Exception ex) when (ex is FormatException or InvalidOperationException)
-        {
-            throw IncidenciaErrors.DatosInvalidos([new ErrorDetalle("detalleEspecifico", "Tiene un formato inválido.")]);
-        }
+        return (evidencias, bitacora);
     }
 }

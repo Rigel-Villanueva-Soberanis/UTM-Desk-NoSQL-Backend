@@ -1,8 +1,8 @@
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
-using AutoMapper;
 using Domain;
+using AutoMapper;
 
 namespace Application.Services;
 

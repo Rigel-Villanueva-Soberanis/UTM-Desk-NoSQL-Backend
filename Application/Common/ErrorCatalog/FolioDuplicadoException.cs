@@ -1,4 +1,4 @@
-namespace Application.Common;
+namespace Application.Common.ErrorCatalog;
 
 /// <summary>
 /// La base de datos rechazó la incidencia porque su folio ya existe (índice único ux_folio_incidencia).

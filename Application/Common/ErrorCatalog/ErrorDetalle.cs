@@ -1,4 +1,4 @@
-namespace Application.Common;
+namespace Application.Common.ErrorCatalog;
 
 /// <summary>
 /// Error de validación ligado a un campo específico, para que el frontend

@@ -1,7 +1,7 @@
-using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json;
+using System.Text;
 
 namespace Api.Configuration;
 

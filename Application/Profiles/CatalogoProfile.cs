@@ -1,6 +1,6 @@
-using AutoMapper;
 using Application.DTOs.Responses;
 using Domain;
+using AutoMapper;
 using MongoDB.Bson;
 
 namespace Application.Profiles;

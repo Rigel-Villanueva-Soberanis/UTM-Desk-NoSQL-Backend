@@ -12,6 +12,10 @@ public class IncidenciaResumenResponse
     public string Edificio { get; set; } = string.Empty;
     public string? Aula { get; set; }
     public string NombreReportante { get; set; } = string.Empty;
+
+    /// <summary>true si ya tiene un técnico asignado.</summary>
+    public bool Asignada { get; set; }
+    public string? IdTecnico { get; set; }
     public string? NombreTecnico { get; set; }
     public DateTime FechaCreacion { get; set; }
 }

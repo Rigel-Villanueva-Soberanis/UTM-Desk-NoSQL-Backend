@@ -1,4 +1,6 @@
-namespace Application.Common;
+using Application.Common.ErrorCatalog;
+
+namespace Application.Common.Utilidades;
 
 /// <summary>
 /// Protección contra inyección NoSQL en MongoDB.

@@ -30,7 +30,27 @@ public class IncidenciaFiltroRequest
     /// <example>computo</example>
     public string? Categoria { get; set; }
 
+    /// <summary>true = solo con técnico asignado · false = solo sin asignar · vacío = todas.</summary>
+    /// <example>false</example>
+    public bool? Asignada { get; set; }
+
     /// <summary>Nombre del edificio (tal como aparece en el catálogo edificios).</summary>
     /// <example>Edificio C</example>
     public string? Edificio { get; set; }
+
+    /// <summary>Etiqueta exacta (sin importar mayúsculas ni acentos).</summary>
+    /// <example>redes</example>
+    public string? Tag { get; set; }
+
+    /// <summary>true = solo las canalizadas con proveedor externo · false = solo sin proveedor · vacío = todas.</summary>
+    /// <example>true</example>
+    public bool? ConProveedorExterno { get; set; }
+
+    /// <summary>Creadas desde este día (hora de México, incluido). Formato AAAA-MM-DD.</summary>
+    /// <example>2026-10-01</example>
+    public DateOnly? FechaDesde { get; set; }
+
+    /// <summary>Creadas hasta este día (hora de México, incluido). Formato AAAA-MM-DD.</summary>
+    /// <example>2026-10-31</example>
+    public DateOnly? FechaHasta { get; set; }
 }

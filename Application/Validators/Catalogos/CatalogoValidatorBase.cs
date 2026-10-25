@@ -1,8 +1,9 @@
-using System.Text.RegularExpressions;
-using Application.Common;
 using Application.Common.ErrorCatalog;
+using Application.Common.ErrorsCatalogos;
+using Application.Common.Utilidades;
 using Application.Interfaces;
 using MongoDB.Bson;
+using System.Text.RegularExpressions;
 
 namespace Application.Validators.Catalogos;
 

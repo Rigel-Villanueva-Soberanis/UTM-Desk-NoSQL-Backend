@@ -31,9 +31,9 @@ public class CatalogoController : ControllerBase
 
     // ─── Catálogo completo ──────────────────────────────────────────────────
 
-    /// <summary>
+    /// <remarks>
     /// Obtiene todos los catálogos. (Todos los roles)
-    /// </summary>
+    /// </remarks>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -41,9 +41,9 @@ public class CatalogoController : ControllerBase
         return Ok(ApiResponse<object>.Ok(resultado));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Obtiene un catálogo completo por su clave. Ej: /api/catalogos/edificios (Todos los roles)
-    /// </summary>
+    /// </remarks>
     [HttpGet("{claveCatalogo}")]
     public async Task<IActionResult> GetByClave(string claveCatalogo)
     {
@@ -51,10 +51,10 @@ public class CatalogoController : ControllerBase
         return Ok(ApiResponse<object>.Ok(resultado));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Reemplaza TODO el contenido de un catálogo.
     /// roles_sistema, edificios y categorias_incidencia: Root y Soporte de TI.
-    /// </summary>
+    /// </remarks>
     [HttpPut("{claveCatalogo}")]
     public async Task<IActionResult> Update(string claveCatalogo, [FromBody] UpdateCatalogoRequest request)
     {
@@ -64,9 +64,9 @@ public class CatalogoController : ControllerBase
 
     // ─── Elementos individuales ─────────────────────────────────────────────
 
-    /// <summary>
+    /// <remarks>
     /// Obtiene un solo elemento. Ej: /api/catalogos/edificios/elementos/lab_c3 (Todos los roles)
-    /// </summary>
+    /// </remarks>
     [HttpGet("{claveCatalogo}/elementos/{claveElemento}")]
     public async Task<IActionResult> GetElemento(string claveCatalogo, string claveElemento)
     {
@@ -74,11 +74,11 @@ public class CatalogoController : ControllerBase
         return Ok(ApiResponse<object>.Ok(resultado!));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Agrega un elemento al catálogo. Body plano, ej. edificios:
     /// { "clave": "aula_a1", "edificio": "Edificio A", "salon": "Aula 1" }
     /// (roles_sistema no permite agregar porque sus roles son fijos)
-    /// </summary>
+    /// </remarks>
     [HttpPost("{claveCatalogo}/elementos")]
     public async Task<IActionResult> AgregarElemento(string claveCatalogo, [FromBody] ElementoCatalogoRequest request)
     {
@@ -86,10 +86,10 @@ public class CatalogoController : ControllerBase
         return StatusCode(201, ApiResponse<object>.Ok(creado!, "Elemento agregado exitosamente"));
     }
 
-    /// <summary>
+    /// <remarks>
     /// Actualiza solo los campos enviados de un elemento. Ej. PATCH /api/catalogos/edificios/elementos/aula_a1
     /// { "salon": "Aula 1 Planta Alta" }  → edificio y clave se conservan.
-    /// </summary>
+    /// </remarks>
     [HttpPatch("{claveCatalogo}/elementos/{claveElemento}")]
     public async Task<IActionResult> ActualizarElemento(string claveCatalogo, string claveElemento, [FromBody] ElementoCatalogoRequest request)
     {

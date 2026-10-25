@@ -1,6 +1,7 @@
 using Application.Interfaces;
 using Application.Services;
 using Application.Validators.Catalogos;
+using Application.Validators.Incidencias;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
 
@@ -25,24 +26,40 @@ public static class DependencyInjection
         // appsettings.json → "ConnectionStrings": { "Redis": "localhost:6379" }
         services.AddSingleton(new RedisContext(configuration.GetConnectionString("Redis")));
 
+        // Infraestructura — Cloudinary (archivos de evidencias). Se crea hasta el primer uso.
+        services.AddSingleton(_ => new CloudinaryContext(
+            configuration["CloudinarySettings:CloudName"],
+            configuration["CloudinarySettings:ApiKey"],
+            configuration["CloudinarySettings:ApiSecret"]));
+
         // Repositorios e Interfaces
         services.AddScoped<IEntityRepository, EntityRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<IIncidenciaRepository, IncidenciaRepository>();
         services.AddScoped<IFolioRepository, FolioRepository>();
+        services.AddScoped<IArchivoRepository, ArchivoRepository>();
+        services.AddScoped<IAnaliticaRepository, AnaliticaRepository>();
 
         // Validadores de catálogos (uno por catálogo editable: permisos + estructura)
         services.AddSingleton<ICatalogoValidator, RolesSistemaValidator>();
         services.AddSingleton<ICatalogoValidator, EdificiosValidator>();
         services.AddSingleton<ICatalogoValidator, CategoriasIncidenciaValidator>();
 
+        // Validadores de incidencias (consultan los catálogos)
+        services.AddScoped<IncidenciaValidator>();
+
         // Servicios de Aplicación
         services.AddScoped<EntityService>();
         services.AddScoped<CatalogoService>();
         services.AddScoped<AuthService>();
         services.AddScoped<UsuarioService>();
+        services.AddScoped<FolioService>();
         services.AddScoped<IncidenciaService>();
+        services.AddScoped<GestionIncidenciaService>();
+        services.AddScoped<AdministracionIncidenciaService>();
+        services.AddScoped<AnaliticaService>();
+        services.AddScoped<EvidenciaService>();
 
         return services;
     }

@@ -1,3 +1,4 @@
+using Application.Common.ErrorCatalog;
 using MongoDB.Bson;
 
 namespace Application.Interfaces;

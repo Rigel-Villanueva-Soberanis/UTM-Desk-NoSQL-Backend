@@ -1,4 +1,4 @@
-namespace Application.Common;
+namespace Application.Common.ErrorCatalog;
 
 /// <summary>
 /// Excepciones controladas del dominio de negocio.

@@ -1,4 +1,5 @@
-using Application.Common;
+using Application.Common.ErrorCatalog;
+using Application.Common.Utilidades;
 using MongoDB.Bson;
 
 namespace Application.Validators.Catalogos;

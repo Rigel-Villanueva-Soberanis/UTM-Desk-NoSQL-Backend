@@ -1,8 +1,8 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
+using System.Text;
 
-namespace Application.Common;
+namespace Application.Common.Utilidades;
 
 /// <summary>
 /// Utilidades para normalizar y comparar textos que llegan del frontend o de la BD.
@@ -45,4 +45,28 @@ public static class TextoNormalizer
     /// <summary>Compara dos textos ignorando mayúsculas, espacios y acentos.</summary>
     public static bool Iguales(string? a, string? b)
         => SinAcentos(a) == SinAcentos(b);
+
+    /// <summary>
+    /// Patrón de búsqueda (regex) que ignora acentos: "jose" → "j[oóö]s[eéë]".
+    /// Escapa los caracteres especiales para que el texto se busque literal (sin inyección de regex).
+    /// Usar con la opción "i" para ignorar mayúsculas.
+    /// </summary>
+    public static string PatronSinAcentos(string texto)
+    {
+        var sb = new StringBuilder();
+        foreach (var c in SinAcentos(texto))
+        {
+            sb.Append(c switch
+            {
+                'a' => "[aáàä]",
+                'e' => "[eéèë]",
+                'i' => "[iíìï]",
+                'o' => "[oóòö]",
+                'u' => "[uúùü]",
+                'n' => "[nñ]",
+                _   => Regex.Escape(c.ToString())
+            });
+        }
+        return sb.ToString();
+    }
 }

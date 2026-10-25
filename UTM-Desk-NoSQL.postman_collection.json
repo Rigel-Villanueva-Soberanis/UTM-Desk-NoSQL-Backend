@@ -1,0 +1,1466 @@
+{
+  "info": {
+    "_postman_id": "8347194c-5d75-4aee-92e7-8a881f0500c2",
+    "name": "UTM Desk NoSQL — API",
+    "description": "Colección con **todos** los endpoints del backend, organizada igual que Swagger.\n\n**Cómo usarla**\n1. En la pestaña *Variables* de la colección revisa `baseUrl` (por defecto `http://localhost:5000`).\n2. Escribe `loginUsuario` y `loginPassword` y ejecuta **Auth → Login**: el token se guarda solo en `token`.\n   Para probar otro rol, cambia el usuario y vuelve a hacer login.\n3. Flujo sugerido: *Registrar incidencia* (guarda `incidenciaId`) → *Subir archivos* → *Ligar evidencias* → *Técnicos disponibles* (guarda `tecnicoId`) → *Asignar técnico* → tags / seguimiento / horas / externo → *Cambiar estado*.\n4. Los filtros de los GET están en *Params*: actívalos con la casilla.\n\n`apiKey` es opcional: si lo llenas, se manda el header `X-Api-Key` en todas las peticiones.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Header X-Api-Key en todas las peticiones (solo si la variable apiKey tiene valor)",
+          "const apiKey = pm.collectionVariables.get('apiKey');",
+          "if (apiKey) { pm.request.headers.upsert({ key: 'X-Api-Key', value: apiKey }); }"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "loginUsuario",
+      "value": "rigel.villanueva",
+      "type": "string"
+    },
+    {
+      "key": "loginPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "miUsuarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "incidenciaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tecnicoId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "evidenciaPublicId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "evidenciaFormato",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "evidenciaNombre",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Inicia sesión. El script guarda el token en la variable `token` y toda la colección lo usa.",
+      "item": [
+        {
+          "name": "Login (guarda el token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con usuario y contraseña.\r\nDevuelve un token JWT con el rol y permisos del usuario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": \"{{loginUsuario}}\",\n  \"password\": \"{{loginPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 200 && r.data) {",
+                  "  pm.collectionVariables.set('token', r.data.token);",
+                  "  pm.collectionVariables.set('miUsuarioId', r.data.id);",
+                  "  console.log('Sesión iniciada como', r.data.usuario, '(' + r.data.rolSistema + ')');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Catalogo",
+      "description": "Catálogos dinámicos: edificios, categorias_incidencia, roles_sistema. Cambia `:claveCatalogo` / `:claveElemento` en la pestaña Params.",
+      "item": [
+        {
+          "name": "Listar todos los catálogos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos"
+              ]
+            },
+            "description": "Obtiene todos los catálogos. (Todos los roles)"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener catálogo por clave",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/:claveCatalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                ":claveCatalogo"
+              ],
+              "variable": [
+                {
+                  "key": "claveCatalogo",
+                  "value": "edificios",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Obtiene un catálogo completo por su clave. Ej: /api/catalogos/edificios (Todos los roles)"
+          },
+          "response": []
+        },
+        {
+          "name": "Reemplazar catálogo completo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/:claveCatalogo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                ":claveCatalogo"
+              ],
+              "variable": [
+                {
+                  "key": "claveCatalogo",
+                  "value": "edificios",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Reemplaza TODO el contenido de un catálogo.\r\nroles_sistema, edificios y categorias_incidencia: Root y Soporte de TI.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contenido\": [\n    {\n      \"clave\": \"lab_c3\",\n      \"edificio\": \"Edificio C\",\n      \"salon\": \"Laboratorio 3\"\n    },\n    {\n      \"clave\": \"site_redes\",\n      \"edificio\": \"Edificio B\",\n      \"salon\": \"Site Principal\"\n    },\n    {\n      \"clave\": \"aula_a1\",\n      \"edificio\": \"Edificio A\",\n      \"salon\": \"Aula 1 Planta Alta\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener un elemento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/:claveCatalogo/elementos/:claveElemento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                ":claveCatalogo",
+                "elementos",
+                ":claveElemento"
+              ],
+              "variable": [
+                {
+                  "key": "claveCatalogo",
+                  "value": "edificios",
+                  "description": ""
+                },
+                {
+                  "key": "claveElemento",
+                  "value": "lab_c3",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Obtiene un solo elemento. Ej: /api/catalogos/edificios/elementos/lab_c3 (Todos los roles)"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar un elemento (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/:claveCatalogo/elementos/:claveElemento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                ":claveCatalogo",
+                "elementos",
+                ":claveElemento"
+              ],
+              "variable": [
+                {
+                  "key": "claveCatalogo",
+                  "value": "edificios",
+                  "description": ""
+                },
+                {
+                  "key": "claveElemento",
+                  "value": "aula_a1",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Actualiza solo los campos enviados de un elemento. Ej. PATCH /api/catalogos/edificios/elementos/aula_a1\r\n{ \"salon\": \"Aula 1 Planta Alta\" }  → edificio y clave se conservan.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon\": \"Aula 1 Planta Alta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar un elemento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/:claveCatalogo/elementos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                ":claveCatalogo",
+                "elementos"
+              ],
+              "variable": [
+                {
+                  "key": "claveCatalogo",
+                  "value": "edificios",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Agrega un elemento al catálogo. Body plano, ej. edificios:\r\n{ \"clave\": \"aula_a1\", \"edificio\": \"Edificio A\", \"salon\": \"Aula 1\" }\r\n(roles_sistema no permite agregar porque sus roles son fijos)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clave\": \"Aula B2\",\n  \"edificio\": \"Edificio B\",\n  \"salon\": \"Aula 2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Evidencia",
+      "description": "Paso 1 de las evidencias: sube el archivo a Cloudinary. El script guarda publicId/formato/nombre para ligarlo con `Incidencia → Ligar evidencias`.",
+      "item": [
+        {
+          "name": "Subir archivos (1 a 3) — guarda la evidencia",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/evidencias/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "evidencias",
+                "upload"
+              ]
+            },
+            "description": "Sube de 1 a 3 archivos de evidencia a Cloudinary en una sola petición.\r\n            \r\n**Roles:** Root, Reportante, Técnico.\r\n            \r\n- Formatos: jpg, jpeg, png, webp, pdf. Máximo 10 MB por archivo.\r\n- Se validan **todos** antes de subir: si uno está mal, no se sube ninguno (errores en `archivos[i]`).\r\n- Las **imágenes** se convierten a **WebP**, se comprimen y se limitan a 1920 px por lado antes de guardarse.\r\n  Los PDF se guardan tal cual.\r\n- La respuesta trae una lista con `publicId`, `formato`, `nombreArchivo` y `url` de cada archivo.\r\n- Después se ligan a la incidencia con `PATCH /api/incidencias/{id}/evidencias`.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "archivos",
+                  "type": "file",
+                  "src": [],
+                  "description": "Selecciona de 1 a 3 archivos (jpg, png, webp o pdf). Para varios, repite la fila 'archivos'."
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code < 300 && Array.isArray(r.data) && r.data.length) {",
+                  "  pm.collectionVariables.set('evidenciaPublicId', r.data[0].publicId);",
+                  "  pm.collectionVariables.set('evidenciaFormato', r.data[0].formato);",
+                  "  pm.collectionVariables.set('evidenciaNombre', r.data[0].nombreArchivo);",
+                  "  console.log('Evidencia lista para ligar:', r.data[0].publicId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Incidencia",
+      "description": "Fases 1 a 4: registro, consultas, evidencias, gestión (bitácora), etiquetas, proveedor externo, edición y borrado. Usan la variable `incidenciaId`.",
+      "item": [
+        {
+          "name": "Registrar incidencia — guarda incidenciaId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias"
+              ]
+            },
+            "description": "Registra una nueva incidencia.\r\n            \r\n**Roles:** Root, Reportante.\r\n            \r\nEl backend genera el folio (INC-AAAA-XXXX) con Redis, toma los datos del reportante del token\r\ny la inicializa en estado `abierta` con `fechas.resolucion = null`.\r\nLas imágenes se agregan después: `POST /api/evidencias/upload` y luego `PATCH /api/incidencias/{id}/evidencias`.\r\n`categoria` y `claveUbicacion` deben existir en los catálogos; `detalleEspecifico` debe cumplir\r\nlos campos dinámicos de la categoría.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3\",\n  \"descripcion\": \"Ningún equipo del laboratorio obtiene dirección IP desde la mañana.\",\n  \"categoria\": \"computo\",\n  \"claveUbicacion\": \"lab_c3\",\n  \"prioridad\": \"alta\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 25\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 201 && r.data) {",
+                  "  pm.collectionVariables.set('incidenciaId', r.data.id);",
+                  "  console.log('Folio generado por Redis:', r.data.folio, '· id:', r.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar incidencias (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias?pagina=1&tamanoPagina=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "description": "Número de página (inicia en 1).",
+                  "disabled": false
+                },
+                {
+                  "key": "tamanoPagina",
+                  "value": "10",
+                  "description": "Registros por página (máximo 50).",
+                  "disabled": false
+                },
+                {
+                  "key": "estado",
+                  "value": "abierta",
+                  "description": "abierta, en proceso, por autorizar, resuelta o cancelada.",
+                  "disabled": true
+                },
+                {
+                  "key": "prioridad",
+                  "value": "alta",
+                  "description": "baja, media, alta o critica.",
+                  "disabled": true
+                },
+                {
+                  "key": "categoria",
+                  "value": "computo",
+                  "description": "Clave de la categoría.",
+                  "disabled": true
+                },
+                {
+                  "key": "asignada",
+                  "value": "False",
+                  "description": "true = solo con técnico asignado · false = solo sin asignar · vacío = todas.",
+                  "disabled": true
+                },
+                {
+                  "key": "edificio",
+                  "value": "Edificio C",
+                  "description": "Nombre del edificio (tal como aparece en el catálogo edificios).",
+                  "disabled": true
+                },
+                {
+                  "key": "tag",
+                  "value": "redes",
+                  "description": "Etiqueta exacta (sin importar mayúsculas ni acentos).",
+                  "disabled": true
+                },
+                {
+                  "key": "conProveedorExterno",
+                  "value": "True",
+                  "description": "true = solo las canalizadas con proveedor externo · false = solo sin proveedor · vacío = todas.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-10-01",
+                  "description": "Creadas desde este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-10-31",
+                  "description": "Creadas hasta este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista incidencias con paginación y filtros.\r\n            \r\n**Roles:** todos los autenticados.\r\n            \r\n- **Reportante:** solo ve sus propias incidencias (el filtro se aplica en el backend).\r\n- **Técnico:** solo ve las incidencias que tiene asignadas.\r\n- **Demás roles:** lista global.\r\n            \r\nFiltros (todos opcionales y combinables):\r\n            \r\n- `estado`, `prioridad`, `categoria`, `edificio`.\r\n- `asignada`: `true` = con técnico, `false` = sin asignar (bandeja para asignar), vacío = todas.\r\n- `tag`: incidencias con esa etiqueta (sin importar mayúsculas ni acentos).\r\n- `conProveedorExterno`: `true` = canalizadas con proveedor externo, `false` = sin proveedor.\r\n- `fechaDesde` / `fechaHasta`: rango de fecha de creación (AAAA-MM-DD, hora de México, ambos días incluidos).\r\n            \r\nCada fila trae `asignada`, `idTecnico` y `nombreTecnico`.\r\n            \r\nOrdenado por fecha de creación, más recientes primero."
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener expediente por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}"
+              ]
+            },
+            "description": "Obtiene el expediente completo de una incidencia por su id de MongoDB.\r\n            \r\n**Roles:** todos los autenticados.\r\n            \r\n- **Reportante:** solo si él la creó.\r\n- **Técnico:** solo si está asignado a ella.\r\n- **Demás roles:** cualquier incidencia."
+          },
+          "response": []
+        },
+        {
+          "name": "Editar incidencia (corregir captura)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}"
+              ]
+            },
+            "description": "Corrige la captura inicial: reemplaza `titulo`, `descripcion`, `ubicacion` y `detalle_especifico`.\r\n            \r\n**Roles:**\r\n            \r\n- **Root, Soporte de TI:** cualquier incidencia, en cualquier estado.\r\n- **Reportante:** solo las suyas y **solo mientras están `abierta`**. Si ya pasó a `en proceso`, `resuelta`\r\n  o `cancelada`, se rechaza con error de permisos (403).\r\n            \r\nLa categoría no se cambia: `detalleEspecifico` se valida contra los campos dinámicos de la categoría actual.\r\n`claveUbicacion` debe existir en el catálogo de edificios.\r\n**Bitácora:** registra qué campos se corrigieron. Si no cambia nada, no se guarda nada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3 (Edificio C)\",\n  \"descripcion\": \"Ningún equipo obtiene IP desde la mañana; son 28 equipos.\",\n  \"claveUbicacion\": \"lab_c3\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 28\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar incidencia (borra también Cloudinary)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}"
+              ]
+            },
+            "description": "Elimina la incidencia por completo (borrado físico, no se puede deshacer).\r\n            \r\n**Roles:** Root, Administrativos.\r\n            \r\n1. Lee `evidencias_adjuntas` y toma los `public_id`.\r\n2. Borra cada archivo de Cloudinary (`DestroyAsync`).\r\n3. Solo si todos se borraron, elimina el documento de MongoDB (`DeleteOneAsync`).\r\n            \r\nSi Cloudinary falla, la incidencia **no** se borra (503) y se puede reintentar."
+          },
+          "response": []
+        },
+        {
+          "name": "Ligar evidencias subidas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/evidencias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "evidencias"
+              ]
+            },
+            "description": "Liga a la incidencia de 1 a 3 archivos ya subidos con `POST /api/evidencias/upload` ($push en `evidencias_adjuntas`).\r\n            \r\n**Roles:**\r\n            \r\n- **Root:** en cualquier incidencia.\r\n- **Reportante:** solo en las suyas (evidencia inicial).\r\n- **Técnico:** solo en las que tiene asignadas (evidencia de reparación).\r\n            \r\nEl backend agrega los datos del usuario (del token) y la fecha actual, y registra la acción en la bitácora.\r\nNo se permite en incidencias `resuelta` o `cancelada`. No se puede ligar dos veces el mismo archivo.\r\n            \r\n**Límite por incidencia:** Reportante máximo 3 evidencias suyas · Técnico máximo 3 suyas · Root sin límite.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"evidencias\": [\n    {\n      \"publicId\": \"{{evidenciaPublicId}}\",\n      \"formato\": \"{{evidenciaFormato}}\",\n      \"nombreArchivo\": \"{{evidenciaNombre}}\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Asignar / reasignar técnico",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/asignar-tecnico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "asignar-tecnico"
+              ]
+            },
+            "description": "Asigna o reasigna el técnico responsable.\r\n            \r\n**Roles:** Root, Soporte de TI, Administrativos.\r\n            \r\n- Verifica en la base de datos que el usuario tenga **rol Técnico** y la cuenta activa; si es docente, alumno o administrativo se rechaza.\r\n- Si no tenía técnico lo vincula; si ya tenía, lo **reemplaza**.\r\n- Si estaba `abierta`, pasa automáticamente a `en proceso`.\r\n- **Bitácora:** asignación inicial o reasignación con el nombre del técnico (y el cambio automático de estado).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idTecnico\": \"{{tecnicoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar estado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/cambiar-estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "cambiar-estado"
+              ]
+            },
+            "description": "Cambia el estado de la incidencia con su motivo.\r\n            \r\n**Roles:**\r\n            \r\n- **Root, Soporte de TI, Administrativos:** cualquier cambio, incluida la reapertura `resuelta` → `en proceso`.\r\n- **Técnico:** solo en sus incidencias asignadas: `abierta` → `en proceso` y `en proceso` → `resuelta`.\r\n            \r\nFlujo normal: `abierta` → `en proceso` → `resuelta` / `cancelada`.\r\n            \r\n- **`resuelta`:** guarda `fechas.resolucion` = ahora; empieza el conteo de 60 días del índice TTL.\r\n- **Reapertura:** `fechas.resolucion` = null; el TTL se detiene y el documento ya no se borra.\r\n- **Bitácora:** `estado_anterior` → `estado_reportado` con el motivo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"resuelta\",\n  \"motivo\": \"Se reemplazó el switch dañado y todos los equipos ya tienen red.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar nota de seguimiento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/seguimiento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "seguimiento"
+              ]
+            },
+            "description": "Agrega una nota de texto libre a la bitácora (avance, diagnóstico, notas internas).\r\n            \r\n**Roles:** Root, Técnico (asignado a la incidencia).\r\n            \r\nNo cambia el estado ni los datos del ticket. Solo texto: las fotos van por el endpoint de evidencias.\r\nSe guarda con `$push` en `historial_seguimiento` con la fecha y la firma del usuario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": \"Se revisó el rack B: el puerto 12 del switch no da enlace. Se pidió refacción.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar horas invertidas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/horas-invertidas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "horas-invertidas"
+              ]
+            },
+            "description": "Suma horas trabajadas al total de la incidencia.\r\n            \r\n**Roles:** Root, Técnico (asignado a la incidencia).\r\n            \r\nUsa `$inc`: si tenía 1.5 h y se registran 2 h, el total queda en 3.5 h.\r\n**Bitácora:** registra las horas sumadas en la sesión.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horas\": 1.5,\n  \"comentario\": \"Cableado del rack B.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Etiquetas sugeridas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/tags-sugeridos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "tags-sugeridos"
+              ],
+              "query": [
+                {
+                  "key": "busqueda",
+                  "value": "",
+                  "description": "Texto opcional para filtrar. Ej: proy",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Devuelve todas las etiquetas distintas usadas en las incidencias, en orden alfabético.\r\n            \r\n**Roles:** todos los autenticados.\r\n            \r\nUsa `distinct` sobre el arreglo `tags` en MongoDB. Pensado para autocompletar al redactar un reporte o al filtrar.\r\nCon `busqueda` devuelve solo las que contienen ese texto (sin importar mayúsculas ni acentos).\r\n            \r\nEjemplo de respuesta: `[\"clima\", \"proyector\", \"redes\", \"soporte-laptop\"]`"
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar / quitar etiquetas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/tags",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "tags"
+              ]
+            },
+            "description": "Agrega y/o quita etiquetas de la incidencia. Devuelve la lista final de etiquetas.\r\n            \r\n**Roles:** Root, Técnico (solo en sus incidencias asignadas), Soporte de TI, Administrativos.\r\n            \r\n- Las etiquetas se guardan en minúsculas y sin acentos: `\"Proyector Eléctrico\"` → `\"proyector electrico\"`.\r\n- `agregar` usa `$addToSet`: si la etiqueta ya está en el ticket no se duplica.\r\n- `quitar` usa `$pull`.\r\n- Solo letras, números, espacios, guiones y guiones bajos; de 2 a 30 caracteres. Máximo 10 por lista y 15 por incidencia.\r\n- **Bitácora:** registra las etiquetas agregadas y quitadas.\r\n            \r\nEjemplo: `{ \"agregar\": [\"Proyector\", \"cable hdmi\"], \"quitar\": [\"clima\"] }`",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agregar\": [\n    \"Redes\",\n    \"Switch\"\n  ],\n  \"quitar\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Canalizar con proveedor externo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/{{incidenciaId}}/tecnico-externo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "{{incidenciaId}}",
+                "tecnico-externo"
+              ]
+            },
+            "description": "Canaliza la incidencia con un proveedor externo (subcontratación).\r\n            \r\n**Roles:** Root, Soporte de TI, Administrativos.\r\n            \r\n- Guarda el subdocumento `tecnico_externo` con `requiere_servicio_externo = true`, empresa, técnico responsable,\r\n  contacto y orden de servicio. Si ya tenía proveedor, lo **reemplaza**.\r\n- **Bitácora:** \"Incidencia canalizada con proveedor externo: Telmex. Orden de servicio: OS-8841.\"\r\n- No se permite en incidencias `resuelta` o `cancelada`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"empresa\": \"Telmex\",\n  \"tecnicoResponsable\": \"Ing. Roberto Pech\",\n  \"contacto\": \"999 123 4567\",\n  \"ordenServicio\": \"OS-8841\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Incidencia · Analítica",
+      "description": "Fase 5: búsqueda full-text y estadísticas con pipelines de agregación.",
+      "item": [
+        {
+          "name": "Búsqueda full-text ($text)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/incidencias/buscar?q=internet laboratorio&pagina=1&tamanoPagina=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "incidencias",
+                "buscar"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "internet laboratorio",
+                  "description": "Palabras a buscar. Usa \"comillas\" para una frase exacta y -palabra para excluirla.",
+                  "disabled": false
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "description": "Número de página (inicia en 1).",
+                  "disabled": false
+                },
+                {
+                  "key": "tamanoPagina",
+                  "value": "10",
+                  "description": "Registros por página (máximo 50).",
+                  "disabled": false
+                },
+                {
+                  "key": "estado",
+                  "value": "abierta",
+                  "description": "abierta, en proceso, por autorizar, resuelta o cancelada.",
+                  "disabled": true
+                },
+                {
+                  "key": "prioridad",
+                  "value": "alta",
+                  "description": "baja, media, alta o critica.",
+                  "disabled": true
+                },
+                {
+                  "key": "categoria",
+                  "value": "computo",
+                  "description": "Clave de la categoría.",
+                  "disabled": true
+                },
+                {
+                  "key": "asignada",
+                  "value": "False",
+                  "description": "true = solo con técnico asignado · false = solo sin asignar · vacío = todas.",
+                  "disabled": true
+                },
+                {
+                  "key": "edificio",
+                  "value": "Edificio C",
+                  "description": "Nombre del edificio (tal como aparece en el catálogo edificios).",
+                  "disabled": true
+                },
+                {
+                  "key": "tag",
+                  "value": "redes",
+                  "description": "Etiqueta exacta (sin importar mayúsculas ni acentos).",
+                  "disabled": true
+                },
+                {
+                  "key": "conProveedorExterno",
+                  "value": "True",
+                  "description": "true = solo las canalizadas con proveedor externo · false = solo sin proveedor · vacío = todas.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-10-01",
+                  "description": "Creadas desde este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-10-31",
+                  "description": "Creadas hasta este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Búsqueda full-text en `titulo` y `descripcion`, ordenada de la más relevante a la menos relevante.\r\n            \r\n**Roles:** Root, Soporte de TI, Directivos.\r\n            \r\n- Usa `$text` con el índice de texto `ix_texto_incidencias` (idioma español): ignora mayúsculas, acentos\r\n  y palabras comunes (\"el\", \"de\", \"la\"), y reconoce variantes (\"proyectores\" encuentra \"proyector\").\r\n- Cada fila trae `relevancia` (textScore de MongoDB). El título pesa el doble que la descripción.\r\n- `q` con varias palabras busca cualquiera de ellas; `\"pantalla azul\"` entre comillas busca la frase exacta;\r\n  `-impresora` excluye esa palabra.\r\n- Acepta los mismos filtros del listado: `estado`, `prioridad`, `categoria`, `edificio`, `tag`,\r\n  `asignada`, `conProveedorExterno`, `fechaDesde`, `fechaHasta`.\r\n            \r\nEjemplos: `?q=pantalla+azul` · `?q=proyector+lab&estado=abierta`"
+          },
+          "response": []
+        },
+        {
+          "name": "Tiempos de resolución por edificio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analitica/tiempos-edificio?ordenarPor=reportes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analitica",
+                "tiempos-edificio"
+              ],
+              "query": [
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-10-01",
+                  "description": "Resueltas desde este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-10-31",
+                  "description": "Resueltas hasta este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "categoria",
+                  "value": "computo",
+                  "description": "Clave de la categoría.",
+                  "disabled": true
+                },
+                {
+                  "key": "prioridad",
+                  "value": "alta",
+                  "description": "baja, media, alta o critica.",
+                  "disabled": true
+                },
+                {
+                  "key": "ordenarPor",
+                  "value": "reportes",
+                  "description": "reportes (más reportes primero, por defecto) o tiempo (tiempo promedio más alto primero).",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Tiempo de resolución por edificio.\r\n            \r\n**Roles:** Root, Directivos.\r\n            \r\nPipeline de agregación en MongoDB (no se cargan los documentos al backend):\r\n            \r\n1. `$match`: solo incidencias `resuelta` con `fechas.creacion` y `fechas.resolucion` registradas.\r\n2. `$project`: horas de atención = `fechas.resolucion` − `fechas.creacion`.\r\n3. `$group` por `ubicacion.edificio`: `totalReportes` (`$sum: 1`), `promedioHoras` (`$avg`), además del caso más rápido y el más lento.\r\n4. `$sort`: `ordenarPor=reportes` (por defecto) o `ordenarPor=tiempo`, de mayor a menor.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de resolución, hora de México), `categoria`, `prioridad`.\r\n            \r\nNota: las resueltas se borran solas a los 60 días (índice TTL), así que el reporte cubre los últimos 60 días."
+          },
+          "response": []
+        },
+        {
+          "name": "Eficiencia global (KPIs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analitica/eficiencia-global",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analitica",
+                "eficiencia-global"
+              ],
+              "query": [
+                {
+                  "key": "fechaDesde",
+                  "value": "2026-10-01",
+                  "description": "Creadas desde este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "fechaHasta",
+                  "value": "2026-10-31",
+                  "description": "Creadas hasta este día (hora de México, incluido). Formato AAAA-MM-DD.",
+                  "disabled": true
+                },
+                {
+                  "key": "categoria",
+                  "value": "computo",
+                  "description": "Clave de la categoría.",
+                  "disabled": true
+                },
+                {
+                  "key": "edificio",
+                  "value": "Edificio C",
+                  "description": "Nombre del edificio (tal como aparece en el catálogo edificios).",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "KPIs generales del departamento de TI.\r\n            \r\n**Roles:** Root, Administrativos.\r\n            \r\nUn solo pipeline (`$match` + `$facet`) que calcula tres indicadores sobre los mismos documentos:\r\n            \r\n1. **Horas hombre totales:** `$sum` de `horas_invertidas` (y el promedio por incidencia con horas).\r\n2. **Top 10 de fallas recurrentes:** `$unwind` de `tags` → `$group` por etiqueta → `$sort` → `$limit: 10`.\r\n3. **Proveedores externos:** incidencias con `tecnico_externo` registrado: total de casos, porcentaje y casos por empresa.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de creación, hora de México), `categoria`, `edificio`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuario",
+      "description": "Administración de cuentas (Soporte) y perfil propio.",
+      "item": [
+        {
+          "name": "Listar usuarios (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario?pagina=1&tamanoPagina=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "description": "Número de página (inicia en 1).",
+                  "disabled": false
+                },
+                {
+                  "key": "tamanoPagina",
+                  "value": "10",
+                  "description": "Registros por página (máximo 50).",
+                  "disabled": false
+                },
+                {
+                  "key": "busqueda",
+                  "value": "carlos",
+                  "description": "Busca en nombres, apellidos, usuario y correo a la vez.",
+                  "disabled": true
+                },
+                {
+                  "key": "nombres",
+                  "value": "Carlos",
+                  "description": "Busca solo en nombres.",
+                  "disabled": true
+                },
+                {
+                  "key": "apellidos",
+                  "value": "Dzib",
+                  "description": "Busca en apellido paterno o materno.",
+                  "disabled": true
+                },
+                {
+                  "key": "rol",
+                  "value": "técnico",
+                  "description": "Rol exacto: root, administrativos, soporte, técnico, reportante, directivos.",
+                  "disabled": true
+                },
+                {
+                  "key": "clasificacion",
+                  "value": "redes",
+                  "description": "Clasificación exacta (subrol). Ej: docente, estudiante, redes.",
+                  "disabled": true
+                },
+                {
+                  "key": "estadoCuenta",
+                  "value": "activo",
+                  "description": "activo, inactivo o bloqueado.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista las cuentas del sistema con paginación y filtros.\r\n            \r\n**Roles:** Soporte.\r\n            \r\n- `busqueda`: busca a la vez en nombres, apellidos, usuario y correo.\r\n- `nombres` / `apellidos`: búsqueda parcial (`apellidos` revisa paterno y materno).\r\n- `rol`, `clasificacion`: valor exacto (ej. `técnico`, `redes`).\r\n- `estadoCuenta`: `activo`, `inactivo` o `bloqueado`.\r\n            \r\nLos textos no distinguen mayúsculas ni acentos (`jose` encuentra `José`).\r\nOrdenado por nombres y apellido paterno. Máximo 50 por página."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear usuario — guarda usuarioId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario"
+              ]
+            },
+            "description": "Crea un nuevo usuario en el sistema. (Solo soporte)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidoPaterno\": \"Dzib\",\n  \"apellidoMaterno\": \"Pech\",\n  \"usuario\": \"carlos.dzib\",\n  \"correo\": \"carlos.dzib@utm.mx\",\n  \"password\": \"Temporal123!\",\n  \"rolSistema\": \"Técnico\",\n  \"clasificacionRol\": \"Redes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 201 && r.data) { pm.collectionVariables.set('usuarioId', r.data.id); console.log('usuarioId =', r.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Técnicos disponibles — guarda tecnicoId",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/tecnicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "tecnicos"
+              ],
+              "query": [
+                {
+                  "key": "busqueda",
+                  "value": "carlos",
+                  "description": "Busca en nombres y apellidos a la vez.",
+                  "disabled": true
+                },
+                {
+                  "key": "nombres",
+                  "value": "Carlos",
+                  "description": "Busca solo en nombres.",
+                  "disabled": true
+                },
+                {
+                  "key": "apellidos",
+                  "value": "Dzib",
+                  "description": "Busca en apellido paterno o materno.",
+                  "disabled": true
+                },
+                {
+                  "key": "clasificacion",
+                  "value": "redes",
+                  "description": "Especialidad del técnico (clasificación): mantenimiento, redes, sistemas…",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista los técnicos disponibles para asignar una incidencia.\r\n            \r\n**Roles:** Root, Soporte, Administrativos.\r\n            \r\nSolo devuelve técnicos con cuenta `activo`, con datos mínimos:\r\n`id` (el que se manda en `PATCH /api/incidencias/{id}/asignar-tecnico`), `nombreCompleto`,\r\n`clasificacion` (especialidad) e `incidenciasActivas` (asignadas que no están resueltas ni canceladas).\r\n            \r\nFiltros opcionales: `busqueda` (nombres y apellidos), `nombres`, `apellidos`, `clasificacion`.\r\nSin paginación. Ordenado de menor a mayor carga de trabajo."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 200 && Array.isArray(r.data) && r.data.length) { pm.collectionVariables.set('tecnicoId', r.data[0].id); console.log('tecnicoId =', r.data[0].id, '(' + r.data[0].nombreCompleto + ')'); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener usuario por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "{{usuarioId}}"
+              ]
+            },
+            "description": "Obtiene un usuario por su ID de MongoDB. (Solo soporte)"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "{{usuarioId}}"
+              ]
+            },
+            "description": "Actualiza los datos de un usuario por su ID. (Solo soporte)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidoPaterno\": \"Dzib\",\n  \"apellidoMaterno\": \"Pech\",\n  \"correo\": \"carlos.dzib@utm.mx\",\n  \"estadoCuenta\": \"activo\",\n  \"rolSistema\": \"Técnico\",\n  \"clasificacionRol\": \"Sistemas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "{{usuarioId}}"
+              ]
+            },
+            "description": "Elimina un usuario por su ID. (Solo soporte)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar contraseña de un usuario (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/{{usuarioId}}/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "{{usuarioId}}",
+                "password"
+              ]
+            },
+            "description": "Cambia la contraseña de cualquier usuario sin requerir la anterior. (Solo soporte)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevaPassword\": \"NuevaTemporal123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Editar mi perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/mi-perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "mi-perfil"
+              ]
+            },
+            "description": "Permite al usuario autenticado editar su propio perfil (nombre y correo).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidoPaterno\": \"Dzib\",\n  \"apellidoMaterno\": \"Pech\",\n  \"correo\": \"carlos.dzib@utm.mx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar mi contraseña",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/mi-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "mi-password"
+              ]
+            },
+            "description": "Permite al usuario autenticado cambiar su propia contraseña.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passwordActual\": \"Temporal123!\",\n  \"nuevaPassword\": \"MiNueva123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

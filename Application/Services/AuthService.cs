@@ -1,13 +1,13 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Application.Common;
-using Application.Common.ErrorCatalog;
+using Application.Common.ErrorsUsuarios;
+using Application.Common.Utilidades;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Application.Services;
 

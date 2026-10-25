@@ -1,4 +1,4 @@
-namespace Application.Common;
+namespace Application.Common.Seguridad;
 
 /// <summary>
 /// Datos del usuario autenticado extraídos del token JWT.

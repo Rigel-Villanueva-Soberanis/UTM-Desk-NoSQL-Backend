@@ -1,6 +1,6 @@
-using Application.Common;
+using Application.Common.ErrorCatalog;
 
-namespace Application.Common.ErrorCatalog;
+namespace Application.Common.ErrorsUsuarios;
 
 public static class UsuarioErrors
 {
@@ -24,6 +24,12 @@ public static class UsuarioErrors
 
     public static DomainException ClasificacionNoAplica(string rol) =>
         new(ApiErrors.ValidationFailed, $"El rol '{rol}' no maneja clasificaciones. Envía la clasificación vacía.");
+
+    public static DomainException FiltrosInvalidos(IEnumerable<ErrorDetalle> errores) =>
+        new(ApiErrors.ValidationFailed, "Los filtros de búsqueda no son válidos. Revisa los errores.", errores);
+
+    public static ErrorDetalle EstadoCuentaNoValido(string? valor, IEnumerable<string> opciones) =>
+        new("estadoCuenta", $"'{valor}' no es válido. Opciones: {string.Join(", ", opciones)}.");
 
     public static DomainException PasswordIncorrecta() =>
         new(ApiErrors.Unauthorized, "La contraseña actual es incorrecta.");

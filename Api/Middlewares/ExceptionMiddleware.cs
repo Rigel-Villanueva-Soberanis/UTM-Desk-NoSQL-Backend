@@ -1,4 +1,4 @@
-using Application.Common;
+using Application.Common.ErrorCatalog;
 using MongoDB.Driver;
 using StackExchange.Redis;
 using System.Net;
@@ -40,6 +40,7 @@ public class ExceptionMiddleware
                 ApiErrors.Conflict         => (int)HttpStatusCode.Conflict,       // 409
                 ApiErrors.ValidationFailed => (int)HttpStatusCode.BadRequest,     // 400
                 ApiErrors.InternalError    => (int)HttpStatusCode.InternalServerError, // 500
+                ApiErrors.ServiceUnavailable => (int)HttpStatusCode.ServiceUnavailable, // 503
                 _                          => (int)HttpStatusCode.BadRequest      // 400 por defecto
             };
 

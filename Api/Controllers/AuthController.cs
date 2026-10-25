@@ -19,10 +19,10 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    /// <summary>
+    /// <remarks>
     /// Inicia sesión con usuario y contraseña.
     /// Devuelve un token JWT con el rol y permisos del usuario.
-    /// </summary>
+    /// </remarks>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {

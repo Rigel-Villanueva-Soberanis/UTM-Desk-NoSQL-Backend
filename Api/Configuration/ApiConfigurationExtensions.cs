@@ -1,4 +1,4 @@
-using Application.Common;
+using Application.Common.ErrorCatalog;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Configuration;
@@ -39,13 +39,16 @@ public static class ApiConfigurationExtensions
     }
 
     /// <summary>
-    /// Convierte la llave de ModelState al nombre que usa el frontend en el JSON.
-    /// Ej: "ApellidoPaterno" → "apellidoPaterno", "$.correo" → "correo".
+    /// Convierte la llave de ModelState al nombre que usa el frontend en el JSON (camelCase en cada parte).
+    /// Ej: "ApellidoPaterno" → "apellidoPaterno", "$.correo" → "correo",
+    ///     "Evidencias[0].PublicId" → "evidencias[0].publicId".
     /// </summary>
     private static string NombreCampo(string llave)
     {
         var campo = llave.StartsWith("$.") ? llave[2..] : llave;
         if (string.IsNullOrEmpty(campo) || campo == "$") return "body";
-        return char.ToLowerInvariant(campo[0]) + campo[1..];
+
+        return string.Join('.', campo.Split('.')
+            .Select(parte => parte.Length == 0 ? parte : char.ToLowerInvariant(parte[0]) + parte[1..]));
     }
 }
