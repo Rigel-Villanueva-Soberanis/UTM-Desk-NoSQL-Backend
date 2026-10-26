@@ -36,7 +36,7 @@ public class UsuarioService
         _mapper = mapper;
     }
 
-    // ─── CRUD (solo Soporte TI) ───────────────────────────────────────────────
+    // ─── CRUD (Root y Soporte TI) ───────────────────────────────────────────────
 
     /// <summary>
     /// Listado paginado de cuentas con filtros (nombres, apellidos, rol, clasificación, estado).

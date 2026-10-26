@@ -1251,7 +1251,7 @@
                 }
               ]
             },
-            "description": "Lista las cuentas del sistema con paginación y filtros.\r\n            \r\n**Roles:** Soporte.\r\n            \r\n- `busqueda`: busca a la vez en nombres, apellidos, usuario y correo.\r\n- `nombres` / `apellidos`: búsqueda parcial (`apellidos` revisa paterno y materno).\r\n- `rol`, `clasificacion`: valor exacto (ej. `técnico`, `redes`).\r\n- `estadoCuenta`: `activo`, `inactivo` o `bloqueado`.\r\n            \r\nLos textos no distinguen mayúsculas ni acentos (`jose` encuentra `José`).\r\nOrdenado por nombres y apellido paterno. Máximo 50 por página."
+            "description": "Lista las cuentas del sistema con paginación y filtros.\r\n            \r\n**Roles:** Root, Soporte.\r\n            \r\n- `busqueda`: busca a la vez en nombres, apellidos, usuario y correo.\r\n- `nombres` / `apellidos`: búsqueda parcial (`apellidos` revisa paterno y materno).\r\n- `rol`, `clasificacion`: valor exacto (ej. `técnico`, `redes`).\r\n- `estadoCuenta`: `activo`, `inactivo` o `bloqueado`.\r\n            \r\nLos textos no distinguen mayúsculas ni acentos (`jose` encuentra `José`).\r\nOrdenado por nombres y apellido paterno. Máximo 50 por página."
           },
           "response": []
         },
@@ -1275,7 +1275,7 @@
                 "Usuario"
               ]
             },
-            "description": "Crea un nuevo usuario en el sistema. (Solo soporte)",
+            "description": "Crea un nuevo usuario en el sistema. (Root y Soporte)",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidoPaterno\": \"Dzib\",\n  \"apellidoMaterno\": \"Pech\",\n  \"usuario\": \"carlos.dzib\",\n  \"correo\": \"carlos.dzib@utm.mx\",\n  \"password\": \"Temporal123!\",\n  \"rolSistema\": \"Técnico\",\n  \"clasificacionRol\": \"Redes\"\n}",
@@ -1374,7 +1374,7 @@
                 "{{usuarioId}}"
               ]
             },
-            "description": "Obtiene un usuario por su ID de MongoDB. (Solo soporte)"
+            "description": "Obtiene un usuario por su ID de MongoDB. (Root y Soporte)"
           },
           "response": []
         },
@@ -1399,7 +1399,7 @@
                 "{{usuarioId}}"
               ]
             },
-            "description": "Actualiza los datos de un usuario por su ID. (Solo soporte)",
+            "description": "Actualiza los datos de un usuario por su ID. (Root y Soporte)",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombres\": \"Carlos\",\n  \"apellidoPaterno\": \"Dzib\",\n  \"apellidoMaterno\": \"Pech\",\n  \"correo\": \"carlos.dzib@utm.mx\",\n  \"estadoCuenta\": \"activo\",\n  \"rolSistema\": \"Técnico\",\n  \"clasificacionRol\": \"Sistemas\"\n}",
@@ -1428,7 +1428,7 @@
                 "{{usuarioId}}"
               ]
             },
-            "description": "Elimina un usuario por su ID. (Solo soporte)"
+            "description": "Elimina un usuario por su ID. (Root y Soporte)"
           },
           "response": []
         },
@@ -1454,7 +1454,7 @@
                 "password"
               ]
             },
-            "description": "Cambia la contraseña de cualquier usuario sin requerir la anterior. (Solo soporte)",
+            "description": "Cambia la contraseña de cualquier usuario sin requerir la anterior. (Root y Soporte)",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nuevaPassword\": \"NuevaTemporal123!\"\n}",

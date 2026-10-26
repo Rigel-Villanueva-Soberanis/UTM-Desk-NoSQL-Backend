@@ -26,7 +26,7 @@ public class UsuarioController : ControllerBase
     /// <remarks>
     /// Lista las cuentas del sistema con paginación y filtros.
     ///
-    /// **Roles:** Soporte.
+    /// **Roles:** Root, Soporte.
     ///
     /// - `busqueda`: busca a la vez en nombres, apellidos, usuario y correo.
     /// - `nombres` / `apellidos`: búsqueda parcial (`apellidos` revisa paterno y materno).
@@ -42,7 +42,7 @@ public class UsuarioController : ControllerBase
     /// <response code="401">Sin token o token inválido.</response>
     /// <response code="403">El rol no puede ver las cuentas.</response>
     [HttpGet]
-    [Authorize(Roles = RolesSistema.Soporte)]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> GetAll([FromQuery] UsuarioFiltroRequest filtro)
     {
         var resultado = await _service.GetAllAsync(filtro);
@@ -75,10 +75,10 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
-    /// Obtiene un usuario por su ID de MongoDB. (Solo soporte)
+    /// Obtiene un usuario por su ID de MongoDB. (Root y Soporte)
     /// </remarks>
     [HttpGet("{id}")]
-    [Authorize(Roles = "soporte")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> GetById(string id)
     {
         var resultado = await _service.GetByIdAsync(id);
@@ -86,10 +86,10 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
-    /// Crea un nuevo usuario en el sistema. (Solo soporte)
+    /// Crea un nuevo usuario en el sistema. (Root y Soporte)
     /// </remarks>
     [HttpPost]
-    [Authorize(Roles = "soporte")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request)
     {
         var creado = await _service.CreateAsync(request);
@@ -97,10 +97,10 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
-    /// Actualiza los datos de un usuario por su ID. (Solo soporte)
+    /// Actualiza los datos de un usuario por su ID. (Root y Soporte)
     /// </remarks>
     [HttpPut("{id}")]
-    [Authorize(Roles = "soporte")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateUsuarioRequest request)
     {
         await _service.UpdateAsync(id, request);
@@ -108,10 +108,10 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
-    /// Cambia la contraseña de cualquier usuario sin requerir la anterior. (Solo soporte)
+    /// Cambia la contraseña de cualquier usuario sin requerir la anterior. (Root y Soporte)
     /// </remarks>
     [HttpPatch("{id}/password")]
-    [Authorize(Roles = "soporte")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> AdminCambiarPassword(string id, [FromBody] AdminCambiarPasswordRequest request)
     {
         await _service.AdminCambiarPasswordAsync(id, request);
@@ -119,10 +119,10 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
-    /// Elimina un usuario por su ID. (Solo soporte)
+    /// Elimina un usuario por su ID. (Root y Soporte)
     /// </remarks>
     [HttpDelete("{id}")]
-    [Authorize(Roles = "soporte")]
+    [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Soporte)]
     public async Task<IActionResult> Delete(string id)
     {
         await _service.DeleteAsync(id);

@@ -89,7 +89,7 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
     responsable, contacto y orden de servicio).
   * Ver la lista de tecnicos activos con su carga de trabajo, para asignar.
 
-  Usuarios (solo este rol los administra):
+  Usuarios (los administran Root y Soporte de TI):
   * Ver la lista de cuentas con filtros (nombre, apellidos, rol,
     clasificacion, estado de cuenta) y paginacion.
   * Ver una cuenta, crear cuentas nuevas, editarlas y cambiar la contrasena de
@@ -157,8 +157,8 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
 ================================================================================
   6. ROOT
 ================================================================================
-  Acceso total a las incidencias y a los catalogos. Es el rol con mas poder,
-  con una sola excepcion: no administra cuentas de usuario.
+  Acceso total al sistema: incidencias, usuarios, catalogos y analiticas.
+  Es el rol con mas poder.
 
   Incidencias:
   * Crear incidencias, subir evidencias y ligarlas (sin el limite de 3).
@@ -175,13 +175,14 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   * Ver la analitica de tiempos por edificio.
   * Ver la analitica de eficiencia global.
 
+  Usuarios:
+  * Ver la lista de cuentas con filtros y paginacion, ver una cuenta, crear
+    cuentas nuevas, editarlas, cambiar la contrasena de cualquier usuario y
+    eliminar cuentas.
+
   Catalogos:
   * Editar todos los catalogos: edificios, salones, categorias y
     clasificaciones de los roles.
-
-  No puede:
-  * Administrar cuentas de usuario (ver la lista, crear, editar, cambiar la
-    contrasena de otros o eliminar). Eso es solo del Soporte de TI.
 
 
 ================================================================================
@@ -204,7 +205,7 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   Analitica: tiempos por edificio           X                       X
   Analitica: eficiencia global              X                             X
   Lista de tecnicos con su carga            X                 X           X
-  Administrar usuarios                                        X
+  Administrar usuarios                      X                 X
   Editar catalogos                          X                 X
 
   *  El reportante solo corrige sus incidencias y solo si estan "abiertas".
