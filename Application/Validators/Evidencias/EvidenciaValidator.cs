@@ -161,7 +161,7 @@ public static class EvidenciaValidator
                 errores.Add(EvidenciaErrors.FormatoNoPermitido($"{prefijo}.formato", FormatosPermitidos));
 
             if (errores.Count == erroresAntes)
-                resultado.Add(new EvidenciaValidada(publicId, formato, referencia.NombreArchivo.Trim()));
+                resultado.Add(new EvidenciaValidada(publicId, formato, TextoSeguro.Limpiar(referencia.NombreArchivo)));
         }
 
         return resultado;

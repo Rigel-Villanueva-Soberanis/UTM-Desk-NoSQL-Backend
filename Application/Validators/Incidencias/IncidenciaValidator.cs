@@ -63,7 +63,8 @@ public class IncidenciaValidator
         NoSqlSanitizer.ValidarTodos(
             (request.Titulo,         "titulo"),
             (request.Categoria,      "categoria"),
-            (request.ClaveUbicacion, "claveUbicacion"),
+            (request.ClaveEdificio,  "claveEdificio"),
+            (request.Salon,          "salon"),
             (request.Prioridad,      "prioridad")
         );
 
@@ -93,15 +94,13 @@ public class IncidenciaValidator
             detalle = DetalleEspecificoValidator.Validar(JsonToBsonValue(request.DetalleEspecifico), campos, errores);
         }
 
-        // Ubicación (contra edificios)
+        // Ubicación (edificio + salón, contra el catálogo edificios)
         var edificios = await ObtenerCatalogoAsync(CatalogoEdificios);
-        var lugar     = BuscarElemento(edificios, request.ClaveUbicacion);
-        if (lugar is null)
-            errores.Add(IncidenciaErrors.UbicacionNoExiste(request.ClaveUbicacion));
+        var ubicacion = ResolverUbicacion(edificios, request.ClaveEdificio, request.Salon, errores);
         if (errores.Count > 0)
             throw IncidenciaErrors.DatosInvalidos(errores);
 
-        return new IncidenciaValidada(prioridad, categoria!["clave"].AsString, detalle, CrearUbicacion(lugar!));
+        return new IncidenciaValidada(prioridad, categoria!["clave"].AsString, detalle, ubicacion!);
     }
 
     // ─── Editar incidencia (corrección de captura) ───────────────────────────
@@ -114,7 +113,8 @@ public class IncidenciaValidator
     {
         NoSqlSanitizer.ValidarTodos(
             (request.Titulo,         "titulo"),
-            (request.ClaveUbicacion, "claveUbicacion")
+            (request.ClaveEdificio,  "claveEdificio"),
+            (request.Salon,          "salon")
         );
 
         var errores = new List<ErrorDetalle>();
@@ -136,14 +136,12 @@ public class IncidenciaValidator
         }
 
         var edificios = await ObtenerCatalogoAsync(CatalogoEdificios);
-        var lugar     = BuscarElemento(edificios, request.ClaveUbicacion);
-        if (lugar is null)
-            errores.Add(IncidenciaErrors.UbicacionNoExiste(request.ClaveUbicacion));
+        var ubicacion = ResolverUbicacion(edificios, request.ClaveEdificio, request.Salon, errores);
 
         if (errores.Count > 0)
             throw IncidenciaErrors.DatosInvalidos(errores);
 
-        return new EdicionValidada(detalle, CrearUbicacion(lugar!));
+        return new EdicionValidada(detalle, ubicacion!);
     }
 
     // ─── Filtros del listado ─────────────────────────────────────────────────
@@ -288,13 +286,52 @@ public class IncidenciaValidator
                                  && TextoNormalizer.NormalizarClave(d["clave"].AsString) == buscada);
     }
 
-    /// <summary>Subdocumento ubicacion a partir del elemento del catálogo edificios.</summary>
-    private static UbicacionIncidencia CrearUbicacion(BsonDocument lugar) => new()
+    /// <summary>
+    /// Arma el subdocumento ubicacion a partir del edificio (por su clave) y el nombre del salón.
+    ///   • El salón debe estar en la lista del edificio; se guarda con el nombre oficial del catálogo.
+    ///   • Es obligatorio si el edificio tiene salones, y no aplica si no tiene.
+    /// Si algo no cumple, agrega el error a <paramref name="errores"/> y devuelve null.
+    /// </summary>
+    private static UbicacionIncidencia? ResolverUbicacion(Catalogo edificios, string? claveEdificio, string? salon, List<ErrorDetalle> errores)
     {
-        Clave    = lugar["clave"].AsString,
-        Edificio = lugar["edificio"].AsString,
-        Aula     = lugar.Contains("salon") && lugar["salon"].IsString ? lugar["salon"].AsString : null
-    };
+        var lugar = BuscarElemento(edificios, claveEdificio);
+        if (lugar is null)
+        {
+            errores.Add(IncidenciaErrors.EdificioNoExiste(claveEdificio, Claves(edificios)));
+            return null;
+        }
+
+        var nombreEdificio = lugar["edificio"].AsString;
+        var salones = lugar.Contains("salones") && lugar["salones"].IsBsonArray
+            ? lugar["salones"].AsBsonArray.Where(x => x.IsString).Select(x => x.AsString).ToList()
+            : new List<string>();
+
+        string? aula = null;
+        if (salones.Count == 0)
+        {
+            if (!string.IsNullOrWhiteSpace(salon))
+            {
+                errores.Add(IncidenciaErrors.SalonNoAplica(nombreEdificio));
+                return null;
+            }
+        }
+        else if (string.IsNullOrWhiteSpace(salon))
+        {
+            errores.Add(IncidenciaErrors.SalonObligatorio(nombreEdificio, salones));
+            return null;
+        }
+        else
+        {
+            aula = salones.FirstOrDefault(s => TextoNormalizer.Iguales(s, salon));
+            if (aula is null)
+            {
+                errores.Add(IncidenciaErrors.SalonNoExiste(salon.Trim(), nombreEdificio, salones));
+                return null;
+            }
+        }
+
+        return new UbicacionIncidencia { Clave = lugar["clave"].AsString, Edificio = nombreEdificio, Aula = aula };
+    }
 
     private static IEnumerable<string> Claves(Catalogo catalogo)
         => catalogo.Contenido.IsBsonArray

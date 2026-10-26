@@ -122,9 +122,9 @@ public class UsuarioService
 
         var usuario = new Usuario
         {
-            Nombres          = request.Nombres.Trim(),
-            ApellidoPaterno  = request.ApellidoPaterno.Trim(),
-            ApellidoMaterno  = request.ApellidoMaterno.Trim(),
+            Nombres          = TextoSeguro.Limpiar(request.Nombres),
+            ApellidoPaterno  = TextoSeguro.Limpiar(request.ApellidoPaterno),
+            ApellidoMaterno  = TextoSeguro.Limpiar(request.ApellidoMaterno),
             Username         = request.Usuario.Trim().ToLowerInvariant(),
             Correo           = request.Correo.Trim().ToLowerInvariant(),
             PasswordHash     = BCrypt.Net.BCrypt.HashPassword(request.Password, 12),
@@ -166,9 +166,9 @@ public class UsuarioService
         // Validar rol y clasificación contra el catálogo roles_sistema (se guardan en minúsculas)
         var (rolValido, clasificacionValida) = await ValidarRolYClasificacionAsync(request.RolSistema, request.ClasificacionRol);
 
-        usuario.Nombres          = request.Nombres.Trim();
-        usuario.ApellidoPaterno  = request.ApellidoPaterno.Trim();
-        usuario.ApellidoMaterno  = request.ApellidoMaterno.Trim();
+        usuario.Nombres          = TextoSeguro.Limpiar(request.Nombres);
+        usuario.ApellidoPaterno  = TextoSeguro.Limpiar(request.ApellidoPaterno);
+        usuario.ApellidoMaterno  = TextoSeguro.Limpiar(request.ApellidoMaterno);
         usuario.Correo           = request.Correo.Trim().ToLowerInvariant();
         usuario.EstadoCuenta     = request.EstadoCuenta;
         usuario.RolSistema       = rolValido;
@@ -202,6 +202,16 @@ public class UsuarioService
     // ─── Endpoints de perfil propio ───────────────────────────────────────────
 
     /// <summary>
+    /// Datos de la cuenta del usuario autenticado (el id sale del token, nunca de la URL).
+    /// </summary>
+    public async Task<UsuarioResponse> GetMiPerfilAsync(string idUsuarioActual)
+    {
+        var usuario = await _repository.GetByIdAsync(idUsuarioActual)
+            ?? throw UsuarioErrors.NotFound();
+        return _mapper.Map<UsuarioResponse>(usuario);
+    }
+
+    /// <summary>
     /// Permite que un usuario edite su propio nombre y correo.
     /// No puede cambiar: usuario, contraseña, rol ni estado de cuenta.
     /// </summary>
@@ -225,9 +235,9 @@ public class UsuarioService
                 throw UsuarioErrors.CorreoRepetido(request.Correo);
         }
 
-        usuario.Nombres         = request.Nombres.Trim();
-        usuario.ApellidoPaterno = request.ApellidoPaterno.Trim();
-        usuario.ApellidoMaterno = request.ApellidoMaterno.Trim();
+        usuario.Nombres         = TextoSeguro.Limpiar(request.Nombres);
+        usuario.ApellidoPaterno = TextoSeguro.Limpiar(request.ApellidoPaterno);
+        usuario.ApellidoMaterno = TextoSeguro.Limpiar(request.ApellidoMaterno);
         usuario.Correo          = request.Correo.Trim().ToLowerInvariant();
 
         await _repository.UpdateAsync(usuario);

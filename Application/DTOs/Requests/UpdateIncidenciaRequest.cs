@@ -21,10 +21,17 @@ public class UpdateIncidenciaRequest
     [StringLength(2000, MinimumLength = 10, ErrorMessage = "La descripción debe tener entre 10 y 2000 caracteres.")]
     public string Descripcion { get; set; } = null!;
 
-    /// <summary>Clave del lugar en el catálogo edificios.</summary>
-    /// <example>lab_c3</example>
-    [Required(ErrorMessage = "La ubicación es obligatoria.")]
-    public string ClaveUbicacion { get; set; } = null!;
+    /// <summary>Clave del edificio en el catálogo edificios.</summary>
+    /// <example>edificio_a</example>
+    [Required(ErrorMessage = "El edificio es obligatorio.")]
+    public string ClaveEdificio { get; set; } = null!;
+
+    /// <summary>
+    /// Nombre del salón del edificio (tal como aparece en el catálogo; no distingue mayúsculas ni acentos).
+    /// Obligatorio si el edificio tiene salones; se omite si el edificio no tiene.
+    /// </summary>
+    /// <example>Aula 102</example>
+    public string? Salon { get; set; }
 
     /// <summary>Campos dinámicos de la categoría ACTUAL de la incidencia (ver campos_dinamicos en el catálogo).</summary>
     public JsonElement DetalleEspecifico { get; set; }

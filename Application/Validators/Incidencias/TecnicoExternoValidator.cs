@@ -22,10 +22,10 @@ public static class TecnicoExternoValidator
         return new TecnicoExterno
         {
             RequiereServicioExterno = true,
-            EmpresaProveedor        = request.Empresa.Trim(),
+            EmpresaProveedor        = TextoSeguro.Limpiar(request.Empresa),
             NombreTecnico           = Opcional(request.TecnicoResponsable),
             Contacto                = Opcional(request.Contacto),
-            OrdenServicioRef        = request.OrdenServicio.Trim().ToUpperInvariant()
+            OrdenServicioRef        = TextoSeguro.Limpiar(request.OrdenServicio).ToUpperInvariant()
         };
     }
 
@@ -39,5 +39,5 @@ public static class TecnicoExternoValidator
            && TextoNormalizer.Iguales(actual.OrdenServicioRef, nuevo.OrdenServicioRef);
 
     private static string? Opcional(string? valor)
-        => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+        => string.IsNullOrWhiteSpace(valor) ? null : TextoSeguro.Limpiar(valor);
 }

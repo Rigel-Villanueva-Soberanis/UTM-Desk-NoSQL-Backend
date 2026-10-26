@@ -32,10 +32,17 @@ public class CreateIncidenciaRequest
     /// </summary>
     public JsonElement DetalleEspecifico { get; set; }
 
-    /// <summary>Clave del lugar en el catálogo edificios.</summary>
-    /// <example>lab_c3</example>
-    [Required(ErrorMessage = "La ubicación es obligatoria.")]
-    public string ClaveUbicacion { get; set; } = string.Empty;
+    /// <summary>Clave del edificio en el catálogo edificios.</summary>
+    /// <example>edificio_a</example>
+    [Required(ErrorMessage = "El edificio es obligatorio.")]
+    public string ClaveEdificio { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Nombre del salón del edificio (tal como aparece en el catálogo; no distingue mayúsculas ni acentos).
+    /// Obligatorio si el edificio tiene salones; se omite si el edificio no tiene.
+    /// </summary>
+    /// <example>Aula 102</example>
+    public string? Salon { get; set; }
 
     /// <summary>Prioridad: baja, media, alta o critica. Si no se envía se usa "media".</summary>
     /// <example>alta</example>

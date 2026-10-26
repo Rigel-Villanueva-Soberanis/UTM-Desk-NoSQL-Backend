@@ -1,6 +1,7 @@
 using Application.Common.Bitacora;
 using Application.Common.ErrorsIncidencias;
 using Application.Common.Seguridad;
+using Application.Common.Utilidades;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
@@ -113,7 +114,7 @@ public class GestionIncidenciaService
             NuevoEstado       = nuevo,
             CambiarResolucion = resuelve || reabre,
             FechaResolucion   = resuelve ? DateTime.UtcNow : null,   // null = se desactiva el TTL
-            Bitacora          = [BitacoraIncidencia.CambioEstado(usuario, incidencia.Estado, nuevo, request.Motivo.Trim())]
+            Bitacora          = [BitacoraIncidencia.CambioEstado(usuario, incidencia.Estado, nuevo, TextoSeguro.Limpiar(request.Motivo))]
         });
 
         return _mapper.Map<IncidenciaResponse>(actualizada);
@@ -126,7 +127,7 @@ public class GestionIncidenciaService
     {
         var incidencia = await ObtenerIncidenciaParaTecnicoAsync(id, usuario);
 
-        var nota = BitacoraIncidencia.Nota(usuario, request.Nota.Trim(), incidencia.Estado);
+        var nota = BitacoraIncidencia.Nota(usuario, TextoSeguro.Limpiar(request.Nota), incidencia.Estado);
         await GuardarAsync(id, new CambiosIncidencia { Bitacora = [nota] });
 
         return _mapper.Map<SeguimientoResponse>(nota);
@@ -139,7 +140,7 @@ public class GestionIncidenciaService
     {
         var incidencia = await ObtenerIncidenciaParaTecnicoAsync(id, usuario);
 
-        var entrada = BitacoraIncidencia.Horas(usuario, request.Horas, request.Comentario, incidencia.Estado);
+        var entrada = BitacoraIncidencia.Horas(usuario, request.Horas, request.Comentario is null ? null : TextoSeguro.Limpiar(request.Comentario), incidencia.Estado);
 
         var actualizada = await GuardarAsync(id, new CambiosIncidencia
         {

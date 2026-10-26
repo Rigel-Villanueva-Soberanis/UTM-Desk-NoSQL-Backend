@@ -94,7 +94,7 @@ public static class DetalleEspecificoValidator
             errores.Add(DetalleEspecificoErrors.DebeSerTexto(ruta));
             return null;
         }
-        var texto = valor.AsString.Trim();
+        var texto = TextoSeguro.Limpiar(valor.AsString);
         if (texto.Length > maxLongitud)
         {
             errores.Add(DetalleEspecificoErrors.MuyLargo(ruta, maxLongitud));

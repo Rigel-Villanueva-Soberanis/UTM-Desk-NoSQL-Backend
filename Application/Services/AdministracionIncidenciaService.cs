@@ -147,7 +147,7 @@ public class AdministracionIncidenciaService
         var datos = await _validator.ValidarEdicionAsync(request, incidencia.Categoria);
 
         var nuevos = new DatosGeneralesIncidencia(
-            request.Titulo.Trim(), request.Descripcion.Trim(), datos.Ubicacion, datos.Detalle);
+            TextoSeguro.Limpiar(request.Titulo), TextoSeguro.Limpiar(request.Descripcion), datos.Ubicacion, datos.Detalle);
 
         var cambiados = CamposCambiados(incidencia, nuevos);
         if (cambiados.Count == 0)

@@ -228,10 +228,10 @@
                 }
               ]
             },
-            "description": "Reemplaza TODO el contenido de un catálogo.\r\nroles_sistema, edificios y categorias_incidencia: Root y Soporte de TI.",
+            "description": "Reemplaza TODO el contenido de un catálogo.\nroles_sistema, edificios y categorias_incidencia: Root y Soporte de TI.\n\nEjemplo con `edificios`: cada edificio lleva `clave`, `edificio` y la lista `salones` (solo nombres).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contenido\": [\n    {\n      \"clave\": \"lab_c3\",\n      \"edificio\": \"Edificio C\",\n      \"salon\": \"Laboratorio 3\"\n    },\n    {\n      \"clave\": \"site_redes\",\n      \"edificio\": \"Edificio B\",\n      \"salon\": \"Site Principal\"\n    },\n    {\n      \"clave\": \"aula_a1\",\n      \"edificio\": \"Edificio A\",\n      \"salon\": \"Aula 1 Planta Alta\"\n    }\n  ]\n}",
+              "raw": "{\n  \"contenido\": [\n    {\n      \"clave\": \"edificio_a\",\n      \"edificio\": \"Edificio A\",\n      \"salones\": [\n        \"Aula 101\",\n        \"Aula 102\",\n        \"Aula 103\"\n      ]\n    },\n    {\n      \"clave\": \"edificio_b\",\n      \"edificio\": \"Edificio B\",\n      \"salones\": [\n        \"Site Principal\"\n      ]\n    },\n    {\n      \"clave\": \"edificio_c\",\n      \"edificio\": \"Edificio C\",\n      \"salones\": [\n        \"Laboratorio 3\"\n      ]\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -266,12 +266,12 @@
                 },
                 {
                   "key": "claveElemento",
-                  "value": "lab_c3",
+                  "value": "edificio_a",
                   "description": ""
                 }
               ]
             },
-            "description": "Obtiene un solo elemento. Ej: /api/catalogos/edificios/elementos/lab_c3 (Todos los roles)"
+            "description": "Obtiene un solo elemento. Ej: /api/catalogos/edificios/elementos/edificio_a (Todos los roles)"
           },
           "response": []
         },
@@ -305,15 +305,90 @@
                 },
                 {
                   "key": "claveElemento",
-                  "value": "aula_a1",
+                  "value": "edificio_a",
                   "description": ""
                 }
               ]
             },
-            "description": "Actualiza solo los campos enviados de un elemento. Ej. PATCH /api/catalogos/edificios/elementos/aula_a1\r\n{ \"salon\": \"Aula 1 Planta Alta\" }  → edificio y clave se conservan.",
+            "description": "Actualiza solo los campos enviados de un elemento. Ej. PATCH /api/catalogos/edificios/elementos/edificio_a\n{ \"edificio\": \"Edificio A (Docencia)\" }  → clave y salones se conservan.\nSi se envía `salones`, REEMPLAZA la lista completa; para agregar o renombrar un salón usa los endpoints de salones.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"salon\": \"Aula 1 Planta Alta\"\n}",
+              "raw": "{\n  \"edificio\": \"Edificio A (Docencia)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar salones a un edificio (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/edificios/elementos/edificio_a/salones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                "edificios",
+                "elementos",
+                "edificio_a",
+                "salones"
+              ]
+            },
+            "description": "Agrega salones a un edificio SIN mandar la lista completa.\n\n**Roles:** Root, Soporte de TI.\n\n- Los nombres nuevos se suman a los que ya tiene; no pueden repetirse entre sí ni con los existentes (sin distinguir mayúsculas ni acentos). Máximo 100 salones por edificio.\n- Responde el edificio completo con su lista de salones actualizada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salones\": [\n    \"Aula 104\",\n    \"Aula 105\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Renombrar un salón (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/catalogos/edificios/elementos/edificio_a/salones/Aula%20104",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "catalogos",
+                "edificios",
+                "elementos",
+                "edificio_a",
+                "salones",
+                "Aula%20104"
+              ]
+            },
+            "description": "Cambia el nombre de UN salón de un edificio.\n\n**Roles:** Root, Soporte de TI.\n\n- La ruta lleva el nombre ACTUAL del salón (sin distinguir mayúsculas ni acentos; los espacios van como %20).\n- Body: el nombre nuevo, que no puede repetirse dentro del edificio.\n- Las incidencias ya registradas conservan el nombre con el que se reportaron.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salon\": \"Aula 104 Planta Alta\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -352,10 +427,10 @@
                 }
               ]
             },
-            "description": "Agrega un elemento al catálogo. Body plano, ej. edificios:\r\n{ \"clave\": \"aula_a1\", \"edificio\": \"Edificio A\", \"salon\": \"Aula 1\" }\r\n(roles_sistema no permite agregar porque sus roles son fijos)",
+            "description": "Agrega un elemento al catálogo. Body plano, ej. edificios:\n{ \"clave\": \"edificio_a\", \"edificio\": \"Edificio A\", \"salones\": [\"Aula 101\", \"Aula 102\"] }\n(`salones` es opcional; la clave y el nombre del edificio no pueden repetirse)\n(roles_sistema no permite agregar porque sus roles son fijos)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"clave\": \"Aula B2\",\n  \"edificio\": \"Edificio B\",\n  \"salon\": \"Aula 2\"\n}",
+              "raw": "{\n  \"clave\": \"Edificio D\",\n  \"edificio\": \"Edificio D\",\n  \"salones\": [\n    \"Aula 1\",\n    \"Aula 2\"\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -445,10 +520,10 @@
                 "incidencias"
               ]
             },
-            "description": "Registra una nueva incidencia.\r\n            \r\n**Roles:** Root, Reportante.\r\n            \r\nEl backend genera el folio (INC-AAAA-XXXX) con Redis, toma los datos del reportante del token\r\ny la inicializa en estado `abierta` con `fechas.resolucion = null`.\r\nLas imágenes se agregan después: `POST /api/evidencias/upload` y luego `PATCH /api/incidencias/{id}/evidencias`.\r\n`categoria` y `claveUbicacion` deben existir en los catálogos; `detalleEspecifico` debe cumplir\r\nlos campos dinámicos de la categoría.",
+            "description": "Registra una nueva incidencia.\r\n            \r\n**Roles:** Root, Reportante.\r\n            \r\nEl backend genera el folio (INC-AAAA-XXXX) con Redis, toma los datos del reportante del token\r\ny la inicializa en estado `abierta` con `fechas.resolucion = null`.\r\nLas imágenes se agregan después: `POST /api/evidencias/upload` y luego `PATCH /api/incidencias/{id}/evidencias`.\r\n`categoria` y `claveEdificio` deben existir en los catálogos; `salon` debe ser uno de los salones de ese edificio\r\n(obligatorio si el edificio tiene salones, se omite si no tiene); `detalleEspecifico` debe cumplir\r\nlos campos dinámicos de la categoría.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3\",\n  \"descripcion\": \"Ningún equipo del laboratorio obtiene dirección IP desde la mañana.\",\n  \"categoria\": \"computo\",\n  \"claveUbicacion\": \"lab_c3\",\n  \"prioridad\": \"alta\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 25\n  }\n}",
+              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3\",\n  \"descripcion\": \"Ningún equipo del laboratorio obtiene dirección IP desde la mañana.\",\n  \"categoria\": \"computo\",\n  \"claveEdificio\": \"edificio_c\",\n  \"salon\": \"Laboratorio 3\",\n  \"prioridad\": \"alta\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 25\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -601,10 +676,10 @@
                 "{{incidenciaId}}"
               ]
             },
-            "description": "Corrige la captura inicial: reemplaza `titulo`, `descripcion`, `ubicacion` y `detalle_especifico`.\r\n            \r\n**Roles:**\r\n            \r\n- **Root, Soporte de TI:** cualquier incidencia, en cualquier estado.\r\n- **Reportante:** solo las suyas y **solo mientras están `abierta`**. Si ya pasó a `en proceso`, `resuelta`\r\n  o `cancelada`, se rechaza con error de permisos (403).\r\n            \r\nLa categoría no se cambia: `detalleEspecifico` se valida contra los campos dinámicos de la categoría actual.\r\n`claveUbicacion` debe existir en el catálogo de edificios.\r\n**Bitácora:** registra qué campos se corrigieron. Si no cambia nada, no se guarda nada.",
+            "description": "Corrige la captura inicial: reemplaza `titulo`, `descripcion`, `ubicacion` y `detalle_especifico`.\r\n            \r\n**Roles:**\r\n            \r\n- **Root, Soporte de TI:** cualquier incidencia, en cualquier estado.\r\n- **Reportante:** solo las suyas y **solo mientras están `abierta`**. Si ya pasó a `en proceso`, `resuelta`\r\n  o `cancelada`, se rechaza con error de permisos (403).\r\n            \r\nLa categoría no se cambia: `detalleEspecifico` se valida contra los campos dinámicos de la categoría actual.\r\n`claveEdificio` debe existir en el catálogo de edificios y `salon` ser uno de sus salones (obligatorio si el edificio tiene salones).\r\n**Bitácora:** registra qué campos se corrigieron. Si no cambia nada, no se guarda nada.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3 (Edificio C)\",\n  \"descripcion\": \"Ningún equipo obtiene IP desde la mañana; son 28 equipos.\",\n  \"claveUbicacion\": \"lab_c3\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 28\n  }\n}",
+              "raw": "{\n  \"titulo\": \"Sin internet en el Laboratorio 3 (Edificio C)\",\n  \"descripcion\": \"Ningún equipo obtiene IP desde la mañana; son 28 equipos.\",\n  \"claveEdificio\": \"edificio_c\",\n  \"salon\": \"Laboratorio 3\",\n  \"detalleEspecifico\": {\n    \"direccion_ip\": \"192.168.10.1\",\n    \"conteo_equipos\": 28\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1389,6 +1464,26 @@
                 }
               }
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Ver mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Usuario/mi-perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Usuario",
+                "mi-perfil"
+              ]
+            },
+            "description": "Devuelve los datos de la cuenta de quien tiene la sesión iniciada. Cualquier usuario autenticado; el usuario sale del token."
           },
           "response": []
         },

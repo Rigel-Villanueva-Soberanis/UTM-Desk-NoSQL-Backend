@@ -1,0 +1,228 @@
+﻿================================================================================
+  UTM DESK - QUE PUEDE HACER CADA ROL
+================================================================================
+
+Hay 6 roles: Root, Reportante, Tecnico, Soporte de TI, Directivos y
+Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
+
+
+--------------------------------------------------------------------------------
+  LO QUE PUEDEN HACER TODOS LOS ROLES
+--------------------------------------------------------------------------------
+  * Iniciar sesion.
+  * Consultar los catalogos (edificios con sus salones, categorias con sus
+    campos adicionales, roles del sistema).
+  * Ver las etiquetas (tags) sugeridas para autocompletar.
+  * Ver los datos de su propia cuenta.
+  * Editar su propio perfil (nombres, apellidos y correo). No pueden cambiar
+    su usuario, su rol ni el estado de su cuenta.
+  * Cambiar su propia contrasena (deben escribir la actual).
+
+
+================================================================================
+  1. REPORTANTE  (docentes, estudiantes y personal que reporta fallas)
+================================================================================
+  Reportar y dar seguimiento a SUS propias fallas.
+
+  Puede:
+  * Crear una incidencia: titulo, descripcion, categoria, edificio, salon y los
+    campos adicionales de la categoria. Puede indicar la prioridad; si no la
+    indica, queda en "media". El sistema le asigna el folio automaticamente.
+  * Subir fotos o archivos de evidencia (hasta 3 por vez, maximo 10 MB cada
+    uno; jpg, png, webp o pdf) y ligarlos a su incidencia. Maximo 3 archivos
+    suyos por incidencia.
+  * Ver la lista de SUS incidencias y el detalle completo de cada una
+    (estado, tecnico asignado, historial, evidencias).
+  * Corregir los datos de su incidencia (titulo, descripcion, ubicacion y
+    campos adicionales), pero SOLO mientras siga en estado "abierta". Cuando ya
+    paso a "en proceso", "resuelta" o "cancelada", ya no puede editarla.
+
+  No puede:
+  * Ver incidencias de otras personas.
+  * Asignar tecnicos, cambiar estados, escribir notas ni registrar horas.
+  * Borrar incidencias, buscar en todo el sistema ni ver analiticas.
+  * Administrar usuarios ni catalogos.
+
+
+================================================================================
+  2. TECNICO
+================================================================================
+  Atender las incidencias que le asignaron.
+
+  Puede:
+  * Ver la lista de las incidencias que tiene ASIGNADAS y el detalle de cada
+    una.
+  * Pasar la incidencia de "abierta" a "en proceso" y de "en proceso" a
+    "resuelta" (siempre escribiendo el motivo). No puede hacer otros cambios
+    de estado.
+  * Escribir notas de seguimiento (la bitacora de lo que va haciendo).
+  * Registrar las horas invertidas (de 0.25 a 24 por registro; se van
+    sumando).
+  * Agregar y quitar etiquetas (tags) en sus incidencias.
+  * Subir y ligar evidencias (fotos o pdf) a sus incidencias, hasta 3 suyas
+    por incidencia.
+
+  No puede:
+  * Crear incidencias ni corregir los datos que capturo el reportante.
+  * Ver incidencias que no son suyas.
+  * Asignarse o reasignar incidencias, ni registrar el proveedor externo.
+  * Borrar incidencias, usar la busqueda general ni ver analiticas.
+  * Administrar usuarios ni catalogos.
+  * Modificar incidencias ya "resuelta" o "cancelada".
+
+
+================================================================================
+  3. SOPORTE DE TI
+================================================================================
+  Operar el sistema: incidencias, usuarios y catalogos.
+
+  Incidencias:
+  * Ver todas las incidencias, con todos los filtros (estado, prioridad,
+    categoria, edificio, etiqueta, fechas, con o sin tecnico, con proveedor
+    externo).
+  * Buscar por texto en titulo y descripcion, ordenado por relevancia.
+  * Corregir los datos de cualquier incidencia, en cualquier estado.
+  * Asignar o reasignar tecnico. Si estaba "abierta", pasa sola a "en proceso".
+  * Cambiar el estado a cualquiera (incluso reabrir una resuelta o cancelada).
+  * Agregar y quitar etiquetas.
+  * Registrar o actualizar los datos del proveedor externo (empresa, tecnico
+    responsable, contacto y orden de servicio).
+  * Ver la lista de tecnicos activos con su carga de trabajo, para asignar.
+
+  Usuarios (solo este rol los administra):
+  * Ver la lista de cuentas con filtros (nombre, apellidos, rol,
+    clasificacion, estado de cuenta) y paginacion.
+  * Ver una cuenta, crear cuentas nuevas, editarlas y cambiar la contrasena de
+    cualquier usuario.
+  * Eliminar cuentas.
+
+  Catalogos:
+  * Editar los catalogos: crear y modificar edificios, agregar salones a un
+    edificio, renombrar un salon, editar las categorias (con sus campos
+    adicionales) y las clasificaciones de los roles.
+  * El sistema no permite repetir un edificio ni un salon dentro del mismo
+    edificio.
+
+  No puede:
+  * Crear incidencias, subir evidencias, escribir notas ni registrar horas
+    (eso es del reportante y del tecnico).
+  * Borrar incidencias.
+  * Ver las analiticas.
+
+
+================================================================================
+  4. ADMINISTRATIVOS
+================================================================================
+  Coordinar la atencion y vigilar la eficiencia del departamento.
+
+  Puede:
+  * Ver todas las incidencias, con sus filtros, y el detalle de cada una.
+  * Asignar o reasignar tecnico (con la lista de tecnicos activos y su carga).
+  * Cambiar el estado de cualquier incidencia (incluso reabrir).
+  * Agregar y quitar etiquetas.
+  * Registrar o actualizar los datos del proveedor externo.
+  * Borrar una incidencia. Tambien se borran sus evidencias y no se puede
+    deshacer.
+  * Ver la analitica de eficiencia global: horas hombre totales, promedio de
+    horas por incidencia, etiquetas mas usadas y porcentaje de casos atendidos
+    por proveedores externos (con el desglose por empresa).
+
+  No puede:
+  * Crear incidencias, subir evidencias, escribir notas ni registrar horas.
+  * Corregir los datos de una incidencia.
+  * Usar la busqueda por texto.
+  * Administrar usuarios ni editar catalogos.
+  * Ver la analitica de tiempos por edificio.
+
+
+================================================================================
+  5. DIRECTIVOS
+================================================================================
+  Consultar y tomar decisiones; es un rol de solo lectura.
+
+  Puede:
+  * Ver todas las incidencias, con sus filtros, y el detalle de cada una.
+  * Buscar por texto en titulo y descripcion, ordenado por relevancia.
+  * Ver la analitica de tiempos por edificio: cuantos reportes se resolvieron
+    en cada edificio y en cuanto tiempo (promedio, minimo y maximo), con
+    filtros de fechas, categoria y prioridad.
+
+  No puede:
+  * Crear ni modificar nada: no asigna, no cambia estados, no edita, no borra,
+    no sube evidencias.
+  * Ver la analitica de eficiencia global.
+  * Administrar usuarios ni catalogos.
+
+
+================================================================================
+  6. ROOT
+================================================================================
+  Acceso total a las incidencias y a los catalogos. Es el rol con mas poder,
+  con una sola excepcion: no administra cuentas de usuario.
+
+  Incidencias:
+  * Crear incidencias, subir evidencias y ligarlas (sin el limite de 3).
+  * Ver todas las incidencias, con todos los filtros, y buscar por texto.
+  * Corregir los datos de cualquier incidencia, en cualquier estado.
+  * Asignar o reasignar tecnico y ver la lista de tecnicos con su carga.
+  * Cambiar el estado a cualquiera (incluso reabrir).
+  * Escribir notas de seguimiento y registrar horas en cualquier incidencia.
+  * Agregar y quitar etiquetas.
+  * Registrar o actualizar el proveedor externo.
+  * Borrar incidencias.
+
+  Analiticas:
+  * Ver la analitica de tiempos por edificio.
+  * Ver la analitica de eficiencia global.
+
+  Catalogos:
+  * Editar todos los catalogos: edificios, salones, categorias y
+    clasificaciones de los roles.
+
+  No puede:
+  * Administrar cuentas de usuario (ver la lista, crear, editar, cambiar la
+    contrasena de otros o eliminar). Eso es solo del Soporte de TI.
+
+
+================================================================================
+  RESUMEN RAPIDO  (X = puede, solo = solo lo suyo)
+================================================================================
+
+  Accion                                   Root  Rep   Tec   Sop   Dir   Adm
+  ---------------------------------------  ----  ----  ----  ----  ----  ----
+  Crear incidencias                         X     X
+  Subir evidencias                          X     X     X
+  Ver incidencias                           X    solo  solo   X     X     X
+  Corregir datos de la incidencia           X    solo*        X
+  Asignar / reasignar tecnico               X                 X           X
+  Cambiar estado                            X          X**    X           X
+  Notas de seguimiento y horas              X          X
+  Etiquetas (tags)                          X          X      X           X
+  Proveedor externo                         X                 X           X
+  Borrar incidencias                        X                               X
+  Busqueda por texto                        X                 X     X
+  Analitica: tiempos por edificio           X                       X
+  Analitica: eficiencia global              X                             X
+  Lista de tecnicos con su carga            X                 X           X
+  Administrar usuarios                                        X
+  Editar catalogos                          X                 X
+
+  *  El reportante solo corrige sus incidencias y solo si estan "abiertas".
+  ** El tecnico solo puede pasar de "abierta" a "en proceso" y de "en proceso"
+     a "resuelta".
+
+
+================================================================================
+  REGLAS GENERALES
+================================================================================
+  * Una incidencia "resuelta" o "cancelada" ya no acepta evidencias, notas,
+    horas, asignacion de tecnico ni cambios de proveedor. Para volver a
+    trabajarla, Root, Soporte o Administrativos deben reabrirla.
+  * Estados: abierta -> en proceso -> por autorizar -> resuelta / cancelada.
+  * Al asignar un tecnico a una incidencia "abierta", pasa sola a "en proceso".
+  * Las incidencias "resueltas" se borran automaticamente a los 60 dias; si se
+    reabren antes, ese borrado se cancela.
+  * Cada cambio queda registrado en el historial de la incidencia, con quien lo
+    hizo y cuando.
+  * El edificio y el salon que se elijan al reportar deben existir en el
+    catalogo, y el salon debe pertenecer a ese edificio.

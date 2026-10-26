@@ -130,6 +130,24 @@ public class UsuarioController : ControllerBase
     }
 
     /// <remarks>
+    /// Devuelve los datos de la cuenta de quien tiene la sesión iniciada.
+    ///
+    /// **Roles:** cualquier usuario autenticado.
+    ///
+    /// No recibe parámetros: el usuario se toma del token. Nunca incluye la contraseña.
+    ///
+    /// </remarks>
+    /// <response code="200">Datos del perfil.</response>
+    /// <response code="401">Sin token o token inválido.</response>
+    /// <response code="404">La cuenta ya no existe.</response>
+    [HttpGet("mi-perfil")]
+    public async Task<IActionResult> GetMiPerfil()
+    {
+        var resultado = await _service.GetMiPerfilAsync(ObtenerIdDelToken());
+        return Ok(ApiResponse<UsuarioResponse>.Ok(resultado));
+    }
+
+    /// <remarks>
     /// Permite al usuario autenticado editar su propio perfil (nombre y correo).
     /// </remarks>
     [HttpPut("mi-perfil")]

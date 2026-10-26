@@ -43,8 +43,17 @@ public static class IncidenciaErrors
     public static ErrorDetalle CategoriaNoExiste(string? valor, IEnumerable<string> opciones) =>
         new("categoria", $"La categoría '{valor}' no existe. Opciones: {string.Join(", ", opciones)}.");
 
-    public static ErrorDetalle UbicacionNoExiste(string? valor) =>
-        new("claveUbicacion", $"La ubicación '{valor}' no existe en el catálogo de edificios.");
+    public static ErrorDetalle EdificioNoExiste(string? valor, IEnumerable<string> opciones) =>
+        new("claveEdificio", $"El edificio '{valor}' no existe en el catálogo. Opciones: {string.Join(", ", opciones)}.");
+
+    public static ErrorDetalle SalonObligatorio(string edificio, IEnumerable<string> salones) =>
+        new("salon", $"El salón es obligatorio en {edificio}. Opciones: {string.Join(", ", salones)}.");
+
+    public static ErrorDetalle SalonNoExiste(string? valor, string edificio, IEnumerable<string> salones) =>
+        new("salon", $"El salón '{valor}' no existe en {edificio}. Opciones: {string.Join(", ", salones)}.");
+
+    public static ErrorDetalle SalonNoAplica(string edificio) =>
+        new("salon", $"{edificio} no tiene salones registrados; no envíes el salón.");
 
     public static ErrorDetalle RangoFechasInvalido() =>
         new("fechaDesde", "La fecha inicial no puede ser posterior a la fecha final.");

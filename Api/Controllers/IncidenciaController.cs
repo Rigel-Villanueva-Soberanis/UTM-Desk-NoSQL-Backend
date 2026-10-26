@@ -46,7 +46,8 @@ public class IncidenciaController : ControllerBase
     /// El backend genera el folio (INC-AAAA-XXXX) con Redis, toma los datos del reportante del token
     /// y la inicializa en estado `abierta` con `fechas.resolucion = null`.
     /// Las imágenes se agregan después: `POST /api/evidencias/upload` y luego `PATCH /api/incidencias/{id}/evidencias`.
-    /// `categoria` y `claveUbicacion` deben existir en los catálogos; `detalleEspecifico` debe cumplir
+    /// `categoria` y `claveEdificio` deben existir en los catálogos; `salon` debe ser uno de los salones de ese edificio
+    /// (obligatorio si el edificio tiene salones, se omite si no tiene); `detalleEspecifico` debe cumplir
     /// los campos dinámicos de la categoría.
     ///
     /// </remarks>
@@ -334,7 +335,7 @@ public class IncidenciaController : ControllerBase
     ///   o `cancelada`, se rechaza con error de permisos (403).
     ///
     /// La categoría no se cambia: `detalleEspecifico` se valida contra los campos dinámicos de la categoría actual.
-    /// `claveUbicacion` debe existir en el catálogo de edificios.
+    /// `claveEdificio` debe existir en el catálogo de edificios y `salon` ser uno de sus salones (obligatorio si el edificio tiene salones).
     /// **Bitácora:** registra qué campos se corrigieron. Si no cambia nada, no se guarda nada.
     /// </remarks>
     /// <param name="id">_id de la incidencia.</param>

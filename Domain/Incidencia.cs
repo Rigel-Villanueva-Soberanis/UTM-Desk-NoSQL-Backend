@@ -71,7 +71,7 @@ public class Incidencia
 [BsonIgnoreExtraElements]
 public class UbicacionIncidencia
 {
-    /// <summary>Clave del elemento en el catálogo edificios. Ej: "lab_c3".</summary>
+    /// <summary>Clave del edificio en el catálogo edificios. Ej: "edificio_a".</summary>
     [BsonElement("clave")]
     [BsonIgnoreIfNull]
     public string? Clave { get; set; }

@@ -21,6 +21,9 @@ public class CatalogoService
     /// <summary>Campo identificador cuando un catálogo no tiene validador propio.</summary>
     private const string IdentificadorPorDefecto = "clave";
 
+    /// <summary>Catálogo cuyos elementos (edificios) tienen una lista de salones.</summary>
+    private const string ClaveEdificios = "edificios";
+
     private readonly ICatalogoRepository _repository;
     private readonly IMapper _mapper;
     private readonly Dictionary<string, ICatalogoValidator> _validadores;
@@ -140,6 +143,81 @@ public class CatalogoService
         return BsonTypeMapper.MapToDotNetValue(contenidoLimpio.AsBsonArray[indice]);
     }
 
+    // ─── Salones de un edificio (catálogo edificios) ─────────────────────────
+
+    /// <summary>
+    /// Agrega salones a un edificio sin tener que mandar la lista completa.
+    /// Se revalida el edificio completo: texto, sin repetidos y máximo de salones.
+    /// </summary>
+    public async Task<object?> AgregarSalonesAsync(string claveEdificio, AgregarSalonesRequest request, string rolUsuario)
+    {
+        var (catalogo, validador) = await ObtenerCatalogoConPermisoAsync(ClaveEdificios, rolUsuario);
+
+        if (request.Salones is null || request.Salones.Count == 0)
+            throw EdificioErrors.SalonesVacios();
+
+        var elementos   = ObtenerElementos(catalogo);
+        var indice      = BuscarIndice(elementos, validador.CampoIdentificador, claveEdificio);
+        var actualizado = elementos[indice].AsBsonDocument.DeepClone().AsBsonDocument;
+
+        var salones = SalonesDe(actualizado);
+        foreach (var salon in request.Salones)
+            salones.Add(BsonValue.Create(salon));
+        actualizado["salones"] = salones;
+
+        return await GuardarEdificioAsync(catalogo, validador, elementos, indice, actualizado);
+    }
+
+    /// <summary>
+    /// Cambia el nombre de un salón de un edificio (se busca por su nombre actual; no distingue mayúsculas ni acentos).
+    /// Las incidencias ya registradas conservan el nombre con el que se reportaron.
+    /// </summary>
+    public async Task<object?> ActualizarSalonAsync(string claveEdificio, string salonActual, ActualizarSalonRequest request, string rolUsuario)
+    {
+        var (catalogo, validador) = await ObtenerCatalogoConPermisoAsync(ClaveEdificios, rolUsuario);
+
+        NoSqlSanitizer.Validar(salonActual, "salon");
+
+        var elementos   = ObtenerElementos(catalogo);
+        var indice      = BuscarIndice(elementos, validador.CampoIdentificador, claveEdificio);
+        var actualizado = elementos[indice].AsBsonDocument.DeepClone().AsBsonDocument;
+
+        var salones  = SalonesDe(actualizado);
+        var posicion = salones.ToList().FindIndex(x => x.IsString && TextoNormalizer.Iguales(x.AsString, salonActual));
+        if (posicion < 0)
+            throw EdificioErrors.SalonNoEncontrado(actualizado["edificio"].AsString, salonActual.Trim());
+
+        // Si el nombre nuevo ya lo tiene OTRO salón del edificio, el error va en el campo "salon" del body
+        var nuevo = request.Salon?.Trim();
+        if (!string.IsNullOrEmpty(nuevo)
+            && salones.Where((x, i) => i != posicion && x.IsString && TextoNormalizer.Iguales(x.AsString, nuevo)).Any())
+            throw CatalogoErrors.ElementoInvalido([EdificioErrors.SalonRepetido(nuevo)]);
+
+        salones[posicion]      = BsonValue.Create(request.Salon);
+        actualizado["salones"] = salones;
+
+        // Los errores de ese salón se reportan en el campo "salon" del body
+        return await GuardarEdificioAsync(catalogo, validador, elementos, indice, actualizado,
+            campo => campo == $"salones[{posicion}]" ? "salon" : campo);
+    }
+
+    private static BsonArray SalonesDe(BsonDocument edificio)
+        => edificio.Contains("salones") && edificio["salones"].IsBsonArray
+            ? edificio["salones"].AsBsonArray.DeepClone().AsBsonArray
+            : new BsonArray();
+
+    private async Task<object?> GuardarEdificioAsync(
+        Catalogo catalogo, ICatalogoValidator validador, BsonArray elementos, int indice, BsonDocument actualizado,
+        Func<string, string>? ajustarCampo = null)
+    {
+        var listaNueva = new BsonArray(elementos) { [indice] = actualizado };
+
+        var contenidoLimpio = ValidarConErroresDelElemento(validador, listaNueva, catalogo.Contenido, indice, ajustarCampo);
+        await _repository.UpdateContenidoAsync(catalogo.ClaveCatalogo, contenidoLimpio);
+
+        return BsonTypeMapper.MapToDotNetValue(contenidoLimpio.AsBsonArray[indice]);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>Busca el catálogo por clave (normalizada). Lanza 404 si no existe.</summary>
@@ -215,7 +293,8 @@ public class CatalogoService
     /// de campo simples ("salon" en vez de "contenido[5].salon") para que el frontend
     /// marque directo el input del formulario.
     /// </summary>
-    private static BsonValue ValidarConErroresDelElemento(ICatalogoValidator validador, BsonArray lista, BsonValue actual, int indice)
+    private static BsonValue ValidarConErroresDelElemento(ICatalogoValidator validador, BsonArray lista, BsonValue actual, int indice,
+        Func<string, string>? ajustarCampo = null)
     {
         try
         {
@@ -231,7 +310,7 @@ public class CatalogoService
                 var campo   = e.Campo == prefijo                ? "elemento"
                             : e.Campo.StartsWith(prefijo + ".") ? e.Campo[(prefijo.Length + 1)..]
                             : e.Campo;
-                return new ErrorDetalle(campo, mensaje);
+                return new ErrorDetalle(ajustarCampo?.Invoke(campo) ?? campo, mensaje);
             });
 
             throw CatalogoErrors.ElementoInvalido(errores);

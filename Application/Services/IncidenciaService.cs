@@ -58,8 +58,8 @@ public class IncidenciaService
         var incidencia = new Incidencia
         {
             Id                = ObjectId.GenerateNewId().ToString(),
-            Titulo            = request.Titulo.Trim(),
-            Descripcion       = request.Descripcion.Trim(),
+            Titulo            = TextoSeguro.Limpiar(request.Titulo),
+            Descripcion       = TextoSeguro.Limpiar(request.Descripcion),
             Categoria         = datos.Categoria,
             DetalleEspecifico = datos.Detalle,
             Estado            = IncidenciaValidator.EstadoInicial,

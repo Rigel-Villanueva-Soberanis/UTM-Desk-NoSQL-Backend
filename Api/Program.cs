@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ─── Servicios (organizados por módulos en Api/Configuration) ────────────────
 builder.Services.AddCustomControllers();
 builder.Services.AddSwaggerConfiguration();
+builder.Services.AddCorsConfiguration(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddInfrastructureAndApplication(builder.Configuration);
 
@@ -19,6 +20,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseCors(CorsConfiguration.Politica);   // antes de la autenticación: el preflight (OPTIONS) no lleva token
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
