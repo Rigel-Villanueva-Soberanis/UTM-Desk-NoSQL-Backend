@@ -29,7 +29,7 @@ public class AnaliticaRepository : IAnaliticaRepository
         // 1. $match: solo resueltas con ambas fechas registradas (+ filtros)
         var match = new BsonDocument
         {
-            { "estado", "resuelta" },
+            { "estado", new BsonDocument("$in", new BsonArray { "resuelta", "cerrada" }) },
             { "fechas.creacion",   new BsonDocument("$type", "date") },
             { "fechas.resolucion", RangoFecha(consulta.Desde, consulta.Hasta) }
         };
@@ -41,6 +41,7 @@ public class AnaliticaRepository : IAnaliticaRepository
         {
             { "_id", 0 },
             { "edificio", "$ubicacion.edificio" },
+            { "trabajadas", new BsonDocument("$ifNull", new BsonArray { "$horas_invertidas", 0 }) },
             { "horas", new BsonDocument("$divide", new BsonArray
                 {
                     new BsonDocument("$subtract", new BsonArray { "$fechas.resolucion", "$fechas.creacion" }),
@@ -56,7 +57,8 @@ public class AnaliticaRepository : IAnaliticaRepository
             { "totalReportes", new BsonDocument("$sum", 1) },
             { "promedioHoras", new BsonDocument("$avg", "$horas") },
             { "minimoHoras",   new BsonDocument("$min", "$horas") },
-            { "maximoHoras",   new BsonDocument("$max", "$horas") }
+            { "maximoHoras",   new BsonDocument("$max", "$horas") },
+            { "horasTrabajadas", new BsonDocument("$sum", "$trabajadas") }
         };
 
         // 4. $sort: por número de reportes o por tiempo promedio (de mayor a menor)
@@ -77,7 +79,8 @@ public class AnaliticaRepository : IAnaliticaRepository
             TotalReportes: d["totalReportes"].ToInt32(),
             PromedioHoras: Redondear(d["promedioHoras"]),
             MinimoHoras:   Redondear(d["minimoHoras"]),
-            MaximoHoras:   Redondear(d["maximoHoras"]))).ToList();
+            MaximoHoras:   Redondear(d["maximoHoras"]),
+            HorasTrabajadas: Redondear(d["horasTrabajadas"]))).ToList();
     }
 
     // ─── GET /api/analitica/eficiencia-global ───────────────────────────────
@@ -94,6 +97,8 @@ public class AnaliticaRepository : IAnaliticaRepository
             match.Add("fechas.creacion", RangoFecha(consulta.Desde, consulta.Hasta));
         if (consulta.Categoria is not null) match.Add("categoria", consulta.Categoria);
         if (consulta.Edificio  is not null) match.Add("ubicacion.edificio", consulta.Edificio);
+        if (consulta.Estados   is { Count: > 0 })
+            match.Add("estado", new BsonDocument("$in", new BsonArray(consulta.Estados)));
 
         var horas = new BsonDocument("$ifNull", new BsonArray { "$horas_invertidas", 0 });
 
@@ -177,5 +182,5 @@ public class AnaliticaRepository : IAnaliticaRepository
     }
 
     private static double Redondear(BsonValue valor)
-        => valor.IsNumeric ? Math.Round(valor.ToDouble(), 2) : 0;
+        => valor.IsNumeric ? Math.Round(valor.ToDouble(), 4) : 0;
 }

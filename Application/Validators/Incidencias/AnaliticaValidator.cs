@@ -49,15 +49,18 @@ public static class AnaliticaValidator
             (filtro.Categoria, "categoria"),
             (filtro.Edificio,  "edificio")
         );
+        NoSqlSanitizer.ValidarTodos((filtro.Estado ?? []).Select(e => (e, "estado")).ToArray());
 
         var errores = new List<ErrorDetalle>();
         var (desde, hasta) = IncidenciaValidator.RangoFechas(filtro.FechaDesde, filtro.FechaHasta, errores);
+        var estados = IncidenciaValidator.EstadosDeFiltro(filtro.Estado, errores);
 
         if (errores.Count > 0)
             throw AnaliticaErrors.FiltrosInvalidos(errores);
 
         return new EficienciaGlobalConsulta(
             desde, hasta, IncidenciaValidator.CategoriaDeFiltro(filtro.Categoria),
-            string.IsNullOrWhiteSpace(filtro.Edificio) ? null : filtro.Edificio.Trim());
+            string.IsNullOrWhiteSpace(filtro.Edificio) ? null : filtro.Edificio.Trim(),
+            estados);
     }
 }

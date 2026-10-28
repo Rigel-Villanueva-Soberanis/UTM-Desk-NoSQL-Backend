@@ -60,6 +60,16 @@ public static class EvidenciaValidator
     public static IEnumerable<string> FormatosPermitidos
         => TiposPermitidos.Keys.Select(k => k.TrimStart('.'));
 
+    /// <summary>Tipo de contenido de un formato guardado (sin punto). Ej: "webp" → "image/webp".</summary>
+    public static string TipoMimeDe(string? formato)
+    {
+        var extension = "." + (formato ?? string.Empty).Trim().TrimStart('.');
+        return TiposPermitidos.TryGetValue(extension, out var tipos) ? tipos[0] : "application/octet-stream";
+    }
+
+    /// <summary>Bytes → kilobytes con 2 decimales. Ej: 48213 → 47.08.</summary>
+    public static double PesoEnKb(long bytes) => Math.Round(bytes / 1024.0, 2);
+
     /// <summary>Carpeta de Cloudinary donde se guardan las evidencias de un usuario.</summary>
     public static string CarpetaDe(string idUsuario) => $"utmdesk/evidencias/{idUsuario}";
 

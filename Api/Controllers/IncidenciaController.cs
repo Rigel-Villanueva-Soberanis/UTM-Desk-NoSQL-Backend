@@ -105,6 +105,8 @@ public class IncidenciaController : ControllerBase
     /// - **Técnico:** solo si está asignado a ella.
     /// - **Demás roles:** cualquier incidencia.
     ///
+    /// **Evidencias:** cada una trae `urlTemporal`, un enlace firmado que **vence a los 15 minutos** (`venceEn`, UTC).
+    /// Si venció, se vuelve a pedir el expediente para obtener uno nuevo.
     /// </remarks>
     /// <param name="id">_id de la incidencia. Ej: 6add4fd725d0728c74d86f2e</param>
     /// <response code="200">Expediente completo.</response>
@@ -128,17 +130,20 @@ public class IncidenciaController : ControllerBase
     /// - **Técnico:** solo en las que tiene asignadas (evidencia de reparación).
     ///
     /// El backend agrega los datos del usuario (del token) y la fecha actual, y registra la acción en la bitácora.
-    /// No se permite en incidencias `resuelta` o `cancelada`. No se puede ligar dos veces el mismo archivo.
+    /// No se permite en incidencias `resuelta`, `cerrada` o `cancelada`. No se puede ligar dos veces el mismo archivo.
     ///
     /// **Límite por incidencia:** Reportante máximo 3 evidencias suyas · Técnico máximo 3 suyas · Root sin límite.
+    ///
+    /// Por cada archivo se consulta el almacenamiento para guardar su **peso real** (`peso_kb`) y su tipo de contenido (`tipo_mime`, según el formato).
     /// </remarks>
     /// <param name="id">_id de la incidencia.</param>
     /// <param name="request">Datos que devolvió el upload, en la lista `evidencias`.</param>
     /// <response code="200">Evidencias agregadas.</response>
-    /// <response code="400">Datos inválidos, archivo ajeno o repetido.</response>
+    /// <response code="400">Datos inválidos, archivo ajeno, repetido o que no existe en el almacenamiento.</response>
     /// <response code="403">No tiene permiso sobre esta incidencia.</response>
     /// <response code="404">La incidencia no existe.</response>
     /// <response code="409">La incidencia está cerrada o el rol ya llegó a su límite de evidencias.</response>
+    /// <response code="503">El almacenamiento no respondió al verificar el archivo (reintentar).</response>
     [HttpPatch("{id}/evidencias")]
     [Authorize(Roles = RolesSistema.Root + "," + RolesSistema.Reportante + "," + RolesSistema.TecnicoToken + "," + RolesSistema.Tecnico)]
     public async Task<IActionResult> AgregarEvidencias(string id, [FromBody] AgregarEvidenciasRequest request)
@@ -175,26 +180,30 @@ public class IncidenciaController : ControllerBase
     }
 
     /// <remarks>
-    /// Cambia el estado de la incidencia con su motivo.
+    /// Cambia el estado de la incidencia con su motivo y, opcionalmente, registra el tiempo trabajado: todo en **una sola operación atómica**.
     ///
     /// **Roles:**
     ///
-    /// - **Root, Soporte de TI, Administrativos:** cualquier cambio, incluida la reapertura `resuelta` → `en proceso`.
-    /// - **Técnico:** solo en sus incidencias asignadas: `abierta` → `en proceso` y `en proceso` → `resuelta`.
+    /// - **Root, Soporte de TI, Administrativos:** cualquier cambio (incluida la reapertura a `en proceso`) y son los únicos que pueden pasar a `cerrada` o `cancelada`.
+    /// - **Técnico:** solo en sus incidencias asignadas: `abierta` → `en proceso` · `en proceso` → `en espera` o `resuelta` · `en espera` → `en proceso`.
     ///
-    /// Flujo normal: `abierta` → `en proceso` → `resuelta` / `cancelada`.
+    /// Estados: `abierta`, `en proceso`, `en espera`, `resuelta`, `cerrada`, `cancelada`.
+    /// Flujo normal: `abierta` → `en proceso` ⇄ `en espera` → `resuelta` (el técnico terminó) → `cerrada` (alguien verificó) · o `cancelada`.
     ///
     /// - **`resuelta`:** guarda `fechas.resolucion` = ahora; empieza el conteo de 60 días del índice TTL.
-    /// - **Reapertura:** `fechas.resolucion` = null; el TTL se detiene y el documento ya no se borra.
-    /// - **Bitácora:** `estado_anterior` → `estado_reportado` con el motivo.
+    /// - **`cerrada`:** solo se puede desde `resuelta` y conserva la fecha de resolución (el TTL sigue contando).
+    /// - **Reapertura** (de `resuelta` o `cerrada` a un estado no final): `fechas.resolucion` = null; el TTL se detiene y el documento ya no se borra.
+    /// - **Horas (opcional):** `horas` (0–24) y `minutos` (0–59). Si suman al menos 1 minuto se suman a las horas de la incidencia en el mismo `updateOne`
+    ///   (`$set` estado, `$push` bitácora, `$inc` horas_invertidas). Solo el técnico asignado o Root pueden registrar horas; Soporte y Administrativos reciben 403 si las mandan.
+    /// - **Bitácora:** `estado_anterior` → `estado_reportado` con el motivo (y una entrada de horas si se registró tiempo).
     /// </remarks>
     /// <param name="id">_id de la incidencia.</param>
-    /// <param name="request">Nuevo estado y motivo.</param>
+    /// <param name="request">Nuevo estado, motivo y, opcionalmente, horas y minutos trabajados.</param>
     /// <response code="200">Incidencia actualizada.</response>
-    /// <response code="400">Estado inválido, igual al actual o sin motivo.</response>
-    /// <response code="403">El técnico no está asignado o no puede pasar a ese estado.</response>
+    /// <response code="400">Estado inválido, igual al actual, sin motivo o tiempo fuera de rango.</response>
+    /// <response code="403">El técnico no está asignado o no puede pasar a ese estado, o un rol sin permiso intentó registrar horas.</response>
     /// <response code="404">La incidencia no existe.</response>
-    /// <response code="409">Cambio de estado no permitido, o la incidencia cambió al mismo tiempo.</response>
+    /// <response code="409">Cambio de estado no permitido (por ejemplo `cerrada` sin estar `resuelta`), o la incidencia cambió al mismo tiempo.</response>
     [HttpPatch("{id}/cambiar-estado")]
     [Authorize(Roles = RolesGestion + "," + RolesTecnico)]
     public async Task<IActionResult> CambiarEstado(string id, [FromBody] CambiarEstadoRequest request)
@@ -227,17 +236,20 @@ public class IncidenciaController : ControllerBase
     }
 
     /// <remarks>
-    /// Suma horas trabajadas al total de la incidencia.
+    /// Suma tiempo trabajado al total de la incidencia.
     ///
     /// **Roles:** Root, Técnico (asignado a la incidencia).
     ///
-    /// Usa `$inc`: si tenía 1.5 h y se registran 2 h, el total queda en 3.5 h.
-    /// **Bitácora:** registra las horas sumadas en la sesión.
+    /// Se manda en **horas y minutos** (`horas` 0–24, `minutos` 0–59, mínimo 1 minuto y máximo 24 h por sesión).
+    /// El servidor lo convierte a horas decimales (1 h 30 min = 1.5) y lo suma con `$inc`:
+    /// si tenía 1 h 30 min y se registran 2 h, el total queda en 3 h 30 min.
+    /// La respuesta devuelve `tiempoRegistrado` y `tiempoTotal` como `{ horas, minutos, texto }`.
+    /// **Bitácora:** registra el tiempo sumado en la sesión (ej. "Se registraron 1 h 30 min de trabajo.").
     /// </remarks>
     /// <param name="id">_id de la incidencia.</param>
-    /// <param name="request">Horas de la sesión (0.25 a 24) y comentario opcional.</param>
-    /// <response code="200">Horas registradas; incluye el nuevo total.</response>
-    /// <response code="400">Horas fuera de rango.</response>
+    /// <param name="request">Horas (0–24), minutos (0–59) y comentario opcional.</param>
+    /// <response code="200">Tiempo registrado; incluye el nuevo total.</response>
+    /// <response code="400">Tiempo fuera de rango (menos de 1 minuto o más de 24 h).</response>
     /// <response code="403">No es el técnico asignado.</response>
     /// <response code="404">La incidencia no existe.</response>
     /// <response code="409">La incidencia está cerrada.</response>
@@ -246,7 +258,7 @@ public class IncidenciaController : ControllerBase
     public async Task<IActionResult> RegistrarHoras(string id, [FromBody] RegistrarHorasRequest request)
     {
         var resultado = await _gestionService.RegistrarHorasAsync(id, request, User.ObtenerUsuarioActual());
-        return Ok(ApiResponse<HorasInvertidasResponse>.Ok(resultado, "Horas registradas exitosamente"));
+        return Ok(ApiResponse<HorasInvertidasResponse>.Ok(resultado, "Tiempo registrado exitosamente"));
     }
 
     // ─── Fase 4: etiquetas, proveedor externo, edición y borrado ──────────────
@@ -308,7 +320,7 @@ public class IncidenciaController : ControllerBase
     /// - Guarda el subdocumento `tecnico_externo` con `requiere_servicio_externo = true`, empresa, técnico responsable,
     ///   contacto y orden de servicio. Si ya tenía proveedor, lo **reemplaza**.
     /// - **Bitácora:** "Incidencia canalizada con proveedor externo: Telmex. Orden de servicio: OS-8841."
-    /// - No se permite en incidencias `resuelta` o `cancelada`.
+    /// - No se permite en incidencias `resuelta`, `cerrada` o `cancelada`.
     /// </remarks>
     /// <param name="id">_id de la incidencia.</param>
     /// <param name="request">Datos del proveedor externo.</param>

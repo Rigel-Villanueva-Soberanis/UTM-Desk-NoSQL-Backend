@@ -165,7 +165,7 @@ public class IncidenciaService
         if (!IncidenciaValidator.PuedeAcceder(incidencia, usuario))
             throw EvidenciaErrors.SinPermiso();
 
-        if (IncidenciaValidator.EstaCerrada(incidencia.Estado))
+        if (IncidenciaValidator.EstaFinalizada(incidencia.Estado))
             throw EvidenciaErrors.EstadoNoPermite(incidencia.Estado);
 
         var yaLigadas = incidencia.EvidenciasAdjuntas
@@ -188,7 +188,22 @@ public class IncidenciaService
                 throw EvidenciaErrors.LimitePorRol(usuario.Rol, limite.Value, actuales);
         }
 
-        var (evidencias, bitacora) = CrearEvidencias(validadas, usuario, incidencia.Estado);
+        // Peso real de cada archivo (y que exista de verdad en el almacenamiento)
+        var consultas = await Task.WhenAll(validadas.Select(v => _archivoRepository.ConsultarAsync(v.PublicId)));
+        if (consultas.Any(c => c.Estado == EstadoConsulta.NoDisponible))
+            throw EvidenciaErrors.AlmacenamientoNoDisponible();
+
+        var inexistentes = consultas
+            .Select((c, i) => (c, i))
+            .Where(x => x.c.Estado == EstadoConsulta.NoExiste)
+            .Select(x => EvidenciaErrors.ArchivoNoExiste($"evidencias[{x.i}].publicId"))
+            .ToList();
+        if (inexistentes.Count > 0)
+            throw EvidenciaErrors.DatosInvalidos(inexistentes);
+
+        var pesos = validadas.Select((v, i) => (v.PublicId, consultas[i].Bytes)).ToDictionary(x => x.PublicId, x => x.Bytes);
+
+        var (evidencias, bitacora) = CrearEvidencias(validadas, pesos, usuario, incidencia.Estado);
 
         _ = await _repository.AplicarCambiosAsync(id, new CambiosIncidencia
         {
@@ -207,7 +222,7 @@ public class IncidenciaService
     /// y arma una entrada de bitácora por cada una.
     /// </summary>
     private (List<EvidenciaIncidencia> Evidencias, List<SeguimientoIncidencia> Bitacora) CrearEvidencias(
-        IEnumerable<EvidenciaValidada> validadas, UsuarioActual usuario, string estado)
+        IEnumerable<EvidenciaValidada> validadas, IReadOnlyDictionary<string, long> pesos, UsuarioActual usuario, string estado)
     {
         var evidencias = new List<EvidenciaIncidencia>();
         var bitacora   = new List<SeguimientoIncidencia>();
@@ -220,6 +235,8 @@ public class IncidenciaService
                 UrlStorage    = _archivoRepository.ConstruirUrl(validada.PublicId, validada.Formato),
                 PublicId      = validada.PublicId,
                 Formato       = validada.Formato,
+                TipoMime      = EvidenciaValidator.TipoMimeDe(validada.Formato),
+                PesoKb        = EvidenciaValidator.PesoEnKb(pesos[validada.PublicId]),
                 SubidoPor     = BitacoraIncidencia.Autor(usuario),
                 FechaCarga    = DateTime.UtcNow
             });

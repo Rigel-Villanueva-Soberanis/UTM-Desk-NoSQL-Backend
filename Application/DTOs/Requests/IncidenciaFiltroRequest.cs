@@ -18,7 +18,7 @@ public class IncidenciaFiltroRequest
     [Range(1, 50, ErrorMessage = "El tamaño de página debe estar entre 1 y 50.")]
     public int TamanoPagina { get; set; } = 10;
 
-    /// <summary>abierta, en proceso, por autorizar, resuelta o cancelada.</summary>
+    /// <summary>abierta, en proceso, en espera, resuelta, cerrada o cancelada.</summary>
     /// <example>abierta</example>
     public string? Estado { get; set; }
 

@@ -11,6 +11,15 @@ public class EvidenciaSubidaResponse
     public string Formato { get; set; } = string.Empty;
     public long Bytes { get; set; }
 
-    /// <summary>URL del archivo en Cloudinary.</summary>
-    public string Url { get; set; } = string.Empty;
+    /// <summary>Tipo de contenido del archivo guardado. Ej: image/webp.</summary>
+    public string TipoMime { get; set; } = string.Empty;
+
+    /// <summary>Peso en kilobytes (2 decimales).</summary>
+    public double PesoKb { get; set; }
+
+    /// <summary>Enlace firmado para previsualizar el archivo recién subido. Dura pocos minutos (ver <see cref="VenceEn"/>).</summary>
+    public string UrlTemporal { get; set; } = string.Empty;
+
+    /// <summary>Instante (UTC) en que deja de funcionar <see cref="UrlTemporal"/>.</summary>
+    public DateTime VenceEn { get; set; }
 }

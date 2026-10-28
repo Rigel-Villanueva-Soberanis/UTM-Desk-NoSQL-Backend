@@ -6,14 +6,14 @@ public class EficienciaGlobalResponse
     /// <summary>Incidencias que entran en los filtros.</summary>
     public int TotalIncidencias { get; set; }
 
-    /// <summary>Suma de horas_invertidas de todas las incidencias (horas hombre).</summary>
-    public double HorasHombreTotales { get; set; }
+    /// <summary>Suma del tiempo invertido de todas las incidencias (horas hombre), en horas y minutos.</summary>
+    public DuracionResponse TiempoHombreTotal { get; set; } = new();
 
     /// <summary>Incidencias con al menos una hora registrada.</summary>
     public int IncidenciasConHoras { get; set; }
 
-    /// <summary>Horas promedio en las incidencias que sí tienen horas registradas.</summary>
-    public double PromedioHorasPorIncidencia { get; set; }
+    /// <summary>Tiempo promedio en las incidencias que sí tienen tiempo registrado, en horas y minutos.</summary>
+    public DuracionResponse PromedioPorIncidencia { get; set; } = new();
 
     /// <summary>Las 10 etiquetas más frecuentes (problemáticas más comunes).</summary>
     public List<TagFrecuenciaResponse> TopTags { get; set; } = new();

@@ -462,7 +462,7 @@
                 "upload"
               ]
             },
-            "description": "Sube de 1 a 3 archivos de evidencia a Cloudinary en una sola petición.\r\n            \r\n**Roles:** Root, Reportante, Técnico.\r\n            \r\n- Formatos: jpg, jpeg, png, webp, pdf. Máximo 10 MB por archivo.\r\n- Se validan **todos** antes de subir: si uno está mal, no se sube ninguno (errores en `archivos[i]`).\r\n- Las **imágenes** se convierten a **WebP**, se comprimen y se limitan a 1920 px por lado antes de guardarse.\r\n  Los PDF se guardan tal cual.\r\n- La respuesta trae una lista con `publicId`, `formato`, `nombreArchivo` y `url` de cada archivo.\r\n- Después se ligan a la incidencia con `PATCH /api/incidencias/{id}/evidencias`.",
+            "description": "Sube de 1 a 3 archivos de evidencia a Cloudinary en una sola petición.\r\n            \r\n**Roles:** Root, Reportante, Técnico.\r\n            \r\n- Formatos: jpg, jpeg, png, webp, pdf. Máximo 10 MB por archivo.\r\n- Se validan **todos** antes de subir: si uno está mal, no se sube ninguno (errores en `archivos[i]`).\r\n- Las **imágenes** se convierten a **WebP**, se comprimen y se limitan a 1920 px por lado antes de guardarse.\r\n  Los PDF se guardan tal cual.\r\n- La respuesta trae una lista con `publicId`, `formato`, `nombreArchivo`, `bytes`, `tipoMime`, `pesoKb` y un enlace firmado `urlTemporal` (vence a los 15 minutos, `venceEn`).\r\n- Después se ligan a la incidencia con `PATCH /api/incidencias/{id}/evidencias`.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -578,7 +578,7 @@
                 {
                   "key": "estado",
                   "value": "abierta",
-                  "description": "abierta, en proceso, por autorizar, resuelta o cancelada.",
+                  "description": "abierta, en proceso, en espera, resuelta o cancelada.",
                   "disabled": true
                 },
                 {
@@ -651,7 +651,7 @@
                 "{{incidenciaId}}"
               ]
             },
-            "description": "Obtiene el expediente completo de una incidencia por su id de MongoDB.\r\n            \r\n**Roles:** todos los autenticados.\r\n            \r\n- **Reportante:** solo si él la creó.\r\n- **Técnico:** solo si está asignado a ella.\r\n- **Demás roles:** cualquier incidencia."
+            "description": "Obtiene el expediente completo de una incidencia por su id de MongoDB.\r\n            \r\n**Roles:** todos los autenticados.\r\n            \r\n- **Reportante:** solo si él la creó.\r\n- **Técnico:** solo si está asignado a ella.\r\n- **Demás roles:** cualquier incidencia.\r\n            \r\n**Evidencias:** cada una trae `urlTemporal`, un enlace firmado que **vence a los 15 minutos** (`venceEn`, UTC). Si venció, se vuelve a pedir el expediente para obtener uno nuevo."
           },
           "response": []
         },
@@ -801,10 +801,10 @@
                 "cambiar-estado"
               ]
             },
-            "description": "Cambia el estado de la incidencia con su motivo.\r\n            \r\n**Roles:**\r\n            \r\n- **Root, Soporte de TI, Administrativos:** cualquier cambio, incluida la reapertura `resuelta` → `en proceso`.\r\n- **Técnico:** solo en sus incidencias asignadas: `abierta` → `en proceso` y `en proceso` → `resuelta`.\r\n            \r\nFlujo normal: `abierta` → `en proceso` → `resuelta` / `cancelada`.\r\n            \r\n- **`resuelta`:** guarda `fechas.resolucion` = ahora; empieza el conteo de 60 días del índice TTL.\r\n- **Reapertura:** `fechas.resolucion` = null; el TTL se detiene y el documento ya no se borra.\r\n- **Bitácora:** `estado_anterior` → `estado_reportado` con el motivo.",
+            "description": "Cambia el estado de la incidencia con su motivo y, opcionalmente, registra el tiempo trabajado, todo en **una sola operación atómica**.\n\n**Roles:**\n- **Root, Soporte de TI, Administrativos:** cualquier cambio (incluida la reapertura) y son los únicos que pasan a `cerrada` o `cancelada`.\n- **Técnico:** solo en sus incidencias: `abierta` → `en proceso` · `en proceso` → `en espera` o `resuelta` · `en espera` → `en proceso`.\n\nEstados: `abierta`, `en proceso`, `en espera`, `resuelta`, `cerrada`, `cancelada`. `cerrada` solo desde `resuelta`.\n\n**Horas (opcional):** `horas` (0–24) y `minutos` (0–59). Solo el técnico asignado o Root; Soporte y Administrativos reciben 403 si las mandan.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"estado\": \"resuelta\",\n  \"motivo\": \"Se reemplazó el switch dañado y todos los equipos ya tienen red.\"\n}",
+              "raw": "{\n  \"estado\": \"resuelta\",\n  \"motivo\": \"Se reemplazó el switch dañado y todos los equipos ya tienen red.\",\n  \"horas\": 1,\n  \"minutos\": 30\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -871,10 +871,10 @@
                 "horas-invertidas"
               ]
             },
-            "description": "Suma horas trabajadas al total de la incidencia.\r\n            \r\n**Roles:** Root, Técnico (asignado a la incidencia).\r\n            \r\nUsa `$inc`: si tenía 1.5 h y se registran 2 h, el total queda en 3.5 h.\r\n**Bitácora:** registra las horas sumadas en la sesión.",
+            "description": "Suma tiempo trabajado al total de la incidencia.\r\n            \r\n**Roles:** Root, Técnico (asignado a la incidencia).\r\n            \r\nSe manda en **horas y minutos** (`horas` 0–24, `minutos` 0–59; mínimo 1 minuto y máximo 24 h por sesión). El servidor lo convierte a horas decimales (1 h 30 min = 1.5) y lo suma. Responde `tiempoRegistrado` y `tiempoTotal` como `{ horas, minutos, texto }`.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"horas\": 1.5,\n  \"comentario\": \"Cableado del rack B.\"\n}",
+              "raw": "{\n  \"horas\": 1,\n  \"minutos\": 30,\n  \"comentario\": \"Cableado del rack B.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1025,7 +1025,7 @@
                 {
                   "key": "estado",
                   "value": "abierta",
-                  "description": "abierta, en proceso, por autorizar, resuelta o cancelada.",
+                  "description": "abierta, en proceso, en espera, resuelta o cancelada.",
                   "disabled": true
                 },
                 {
@@ -1130,7 +1130,7 @@
                 }
               ]
             },
-            "description": "Tiempo de resolución por edificio.\r\n            \r\n**Roles:** Root, Directivos.\r\n            \r\nPipeline de agregación en MongoDB (no se cargan los documentos al backend):\r\n            \r\n1. `$match`: solo incidencias `resuelta` con `fechas.creacion` y `fechas.resolucion` registradas.\r\n2. `$project`: horas de atención = `fechas.resolucion` − `fechas.creacion`.\r\n3. `$group` por `ubicacion.edificio`: `totalReportes` (`$sum: 1`), `promedioHoras` (`$avg`), además del caso más rápido y el más lento.\r\n4. `$sort`: `ordenarPor=reportes` (por defecto) o `ordenarPor=tiempo`, de mayor a menor.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de resolución, hora de México), `categoria`, `prioridad`.\r\n            \r\nNota: las resueltas se borran solas a los 60 días (índice TTL), así que el reporte cubre los últimos 60 días."
+            "description": "Tiempo de resolución por edificio.\r\n            \r\n**Roles:** Root, Directivos.\r\n            \r\nPipeline de agregación en MongoDB (no se cargan los documentos al backend):\r\n            \r\n1. `$match`: solo incidencias `resuelta` con `fechas.creacion` y `fechas.resolucion` registradas.\r\n2. `$project`: horas de atención = `fechas.resolucion` − `fechas.creacion`.\r\n3. `$group` por `ubicacion.edificio`: `totalReportes` (`$sum: 1`), el promedio (`$avg`), además del caso más rápido y el más lento. Los tiempos se devuelven en horas y minutos (`tiempoPromedio`, `tiempoMinimo`, `tiempoMaximo`).\r\n4. `$sort`: `ordenarPor=reportes` (por defecto) o `ordenarPor=tiempo`, de mayor a menor.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de resolución, hora de México), `categoria`, `prioridad`.\r\n            \r\nNota: las resueltas se borran solas a los 60 días (índice TTL), así que el reporte cubre los últimos 60 días."
           },
           "response": []
         },
@@ -1173,10 +1173,16 @@
                   "value": "Edificio C",
                   "description": "Nombre del edificio (tal como aparece en el catálogo edificios).",
                   "disabled": true
+                },
+                {
+                  "key": "estado",
+                  "value": "resuelta",
+                  "description": "Opcional, se puede repetir (estado=resuelta&estado=cancelada). Sin mandarlo cuenta todos los estados.",
+                  "disabled": true
                 }
               ]
             },
-            "description": "KPIs generales del departamento de TI.\r\n            \r\n**Roles:** Root, Administrativos.\r\n            \r\nUn solo pipeline (`$match` + `$facet`) que calcula tres indicadores sobre los mismos documentos:\r\n            \r\n1. **Horas hombre totales:** `$sum` de `horas_invertidas` (y el promedio por incidencia con horas).\r\n2. **Top 10 de fallas recurrentes:** `$unwind` de `tags` → `$group` por etiqueta → `$sort` → `$limit: 10`.\r\n3. **Proveedores externos:** incidencias con `tecnico_externo` registrado: total de casos, porcentaje y casos por empresa.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de creación, hora de México), `categoria`, `edificio`."
+            "description": "KPIs generales del departamento de TI.\r\n            \r\n**Roles:** Root, Administrativos.\r\n            \r\nUn solo pipeline (`$match` + `$facet`) que calcula tres indicadores sobre los mismos documentos:\r\n            \r\n1. **Horas hombre totales:** `$sum` de `horas_invertidas` (y el promedio por incidencia con tiempo). Se devuelve en horas y minutos (`tiempoHombreTotal`, `promedioPorIncidencia`).\r\n2. **Top 10 de fallas recurrentes:** `$unwind` de `tags` → `$group` por etiqueta → `$sort` → `$limit: 10`.\r\n3. **Proveedores externos:** incidencias con `tecnico_externo` registrado: total de casos, porcentaje y casos por empresa.\r\n            \r\nFiltros: `fechaDesde` / `fechaHasta` (fecha de creación, hora de México), `categoria`, `edificio`.\r\n            \r\n**Filtro `estado`:** si no se manda, se cuentan todos los estados; si se manda, solo esos (parámetro repetido o separado por coma). Todos los indicadores se calculan sobre las incidencias que cumplen el filtro."
           },
           "response": []
         }

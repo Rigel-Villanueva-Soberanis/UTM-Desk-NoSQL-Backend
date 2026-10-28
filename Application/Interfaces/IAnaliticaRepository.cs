@@ -16,10 +16,10 @@ public interface IAnaliticaRepository
 /// <summary>Filtros ya validados. Desde/Hasta en UTC, Hasta exclusivo. Aplican sobre fechas.resolucion.</summary>
 public record TiemposEdificioConsulta(DateTime? Desde, DateTime? Hasta, string? Categoria, string? Prioridad, bool OrdenarPorTiempo);
 
-/// <summary>Filtros ya validados. Desde/Hasta en UTC, Hasta exclusivo. Aplican sobre fechas.creacion.</summary>
-public record EficienciaGlobalConsulta(DateTime? Desde, DateTime? Hasta, string? Categoria, string? Edificio);
+/// <summary>Filtros ya validados. Desde/Hasta en UTC, Hasta exclusivo. Aplican sobre fechas.creacion. Estados null = todos.</summary>
+public record EficienciaGlobalConsulta(DateTime? Desde, DateTime? Hasta, string? Categoria, string? Edificio, IReadOnlyList<string>? Estados);
 
-public record TiempoEdificio(string Edificio, int TotalReportes, double PromedioHoras, double MinimoHoras, double MaximoHoras);
+public record TiempoEdificio(string Edificio, int TotalReportes, double PromedioHoras, double MinimoHoras, double MaximoHoras, double HorasTrabajadas);
 
 public record EficienciaGlobal(
     int TotalIncidencias,

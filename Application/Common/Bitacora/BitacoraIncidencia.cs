@@ -1,5 +1,6 @@
 using System.Globalization;
 using Application.Common.Seguridad;
+using Application.Common.Utilidades;
 using Domain;
 
 namespace Application.Common.Bitacora;
@@ -47,9 +48,9 @@ public static class BitacoraIncidencia
     public static SeguimientoIncidencia Nota(UsuarioActual usuario, string nota, string estado) =>
         Entrada(TipoNota, usuario, nota, estado);
 
-    public static SeguimientoIncidencia Horas(UsuarioActual usuario, double horas, string? comentario, string estado)
+    public static SeguimientoIncidencia Horas(UsuarioActual usuario, int minutosTotales, string? comentario, string estado)
     {
-        var texto = $"Se registraron {horas.ToString("0.##", CultureInfo.InvariantCulture)} h de trabajo.";
+        var texto = $"Se registraron {DuracionHoras.Texto(minutosTotales)} de trabajo.";
         if (!string.IsNullOrWhiteSpace(comentario))
             texto += $" {comentario.Trim()}";
         return Entrada(TipoHoras, usuario, texto, estado);

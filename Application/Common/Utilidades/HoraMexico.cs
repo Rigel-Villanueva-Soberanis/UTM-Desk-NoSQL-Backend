@@ -21,6 +21,13 @@ public static class HoraMexico
     public static int Anio(DateTime fechaUtc)
         => Zona is null ? fechaUtc.Year : TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, Zona).Year;
 
+    /// <summary>Día según la hora de México, como AAAA-MM-DD (para llaves y reportes por día).</summary>
+    public static string Dia(DateTime fechaUtc)
+    {
+        var local = Zona is null ? fechaUtc : TimeZoneInfo.ConvertTimeFromUtc(fechaUtc, Zona);
+        return local.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     private static TimeZoneInfo? BuscarZona()
     {
         try

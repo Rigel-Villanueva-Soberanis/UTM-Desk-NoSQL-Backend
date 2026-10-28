@@ -12,14 +12,17 @@ public class IncidenciaProfile : Profile
         // Expediente completo
         CreateMap<Incidencia, IncidenciaResponse>()
             .ForMember(dest => dest.DetalleEspecifico,
-                opt => opt.MapFrom(src => BsonTypeMapper.MapToDotNetValue(src.DetalleEspecifico)));
+                opt => opt.MapFrom(src => BsonTypeMapper.MapToDotNetValue(src.DetalleEspecifico)))
+            .ForMember(dest => dest.TiempoInvertido,
+                opt => opt.MapFrom(src => DuracionResponse.DeHoras(src.HorasInvertidas ?? 0)));
 
         CreateMap<UbicacionIncidencia, UbicacionResponse>();
         CreateMap<DatosReportante, DatosReportanteResponse>();
         CreateMap<UsuarioReferencia, UsuarioReferenciaResponse>();
         CreateMap<TecnicoExterno, TecnicoExternoResponse>();
         CreateMap<SeguimientoIncidencia, SeguimientoResponse>();
-        CreateMap<EvidenciaIncidencia, EvidenciaResponse>();
+        CreateMap<EvidenciaIncidencia, EvidenciaResponse>()
+            .AfterMap<EnlaceTemporalEvidencia>();
         CreateMap<FechasIncidencia, FechasResponse>();
 
         // Fila del listado

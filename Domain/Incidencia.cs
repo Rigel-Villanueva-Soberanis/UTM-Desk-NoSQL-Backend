@@ -19,6 +19,15 @@ public class Incidencia
     [BsonElement("folio")]
     public string Folio { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Número que obtuvo la incidencia en el contador de Redis del día y su categoría
+    /// (contador:incidencias:AAAA-MM-DD:categoria). Ej: 3 = la 3.ª incidencia de esa categoría ese día.
+    /// Solo falta si Redis no pudo dar el número.
+    /// </summary>
+    [BsonElement("consecutivo_dia")]
+    [BsonIgnoreIfNull]
+    public long? ConsecutivoDia { get; set; }
+
     [BsonElement("titulo")]
     public string Titulo { get; set; } = string.Empty;
 
@@ -170,7 +179,7 @@ public class EvidenciaIncidencia
     [BsonElement("nombre_archivo")]
     public string NombreArchivo { get; set; } = string.Empty;
 
-    /// <summary>URL del archivo en Cloudinary.</summary>
+    /// <summary>Referencia interna del archivo en Cloudinary (no sirve para verlo: se ve con un enlace temporal firmado).</summary>
     [BsonElement("url_storage")]
     public string UrlStorage { get; set; } = string.Empty;
 
@@ -182,6 +191,16 @@ public class EvidenciaIncidencia
     [BsonElement("formato")]
     [BsonIgnoreIfNull]
     public string? Formato { get; set; }
+
+    /// <summary>Tipo de contenido del archivo. Ej: image/webp, application/pdf.</summary>
+    [BsonElement("tipo_mime")]
+    [BsonIgnoreIfNull]
+    public string? TipoMime { get; set; }
+
+    /// <summary>Peso del archivo en kilobytes (2 decimales). Ej: 47.08.</summary>
+    [BsonElement("peso_kb")]
+    [BsonIgnoreIfNull]
+    public double? PesoKb { get; set; }
 
     [BsonElement("subido_por")]
     public UsuarioReferencia? SubidoPor { get; set; }

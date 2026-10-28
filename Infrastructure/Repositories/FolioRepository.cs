@@ -32,6 +32,14 @@ public class FolioRepository : IFolioRepository
     public async Task<long> IncrementarAsync(string clave)
         => await _redis.GetDatabase().StringIncrementAsync(clave);
 
+    public async Task<long> IncrementarConVigenciaAsync(string clave, TimeSpan vigencia)
+    {
+        var db    = _redis.GetDatabase();
+        var valor = await db.StringIncrementAsync(clave);
+        await db.KeyExpireAsync(clave, vigencia);
+        return valor;
+    }
+
     public async Task AsegurarMinimoAsync(string clave, long minimo)
         => await _redis.GetDatabase().ScriptEvaluateAsync(
             ScriptAsegurarMinimo,

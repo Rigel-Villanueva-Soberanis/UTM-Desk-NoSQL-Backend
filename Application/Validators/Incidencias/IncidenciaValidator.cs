@@ -40,10 +40,11 @@ public class IncidenciaValidator
     public const string PrioridadDefault = "media";
 
     /// <summary>Mismos valores que el enum de la validación de la colección en MongoDB.</summary>
-    public static readonly string[] Estados     = ["abierta", "en proceso", "por autorizar", "resuelta", "cancelada"];
+    public static readonly string[] Estados     = ["abierta", "en proceso", "en espera", "resuelta", "cerrada", "cancelada"];
     public static readonly string[] Prioridades = ["baja", "media", "alta", "critica"];
 
-    private static readonly string[] EstadosCerrados = ["resuelta", "cancelada"];
+    /// <summary>Estados finales: ya no se les agregan evidencias, horas ni cambios (solo Root/Soporte/Administrativos pueden reabrirlas).</summary>
+    private static readonly string[] EstadosFinales = ["resuelta", "cerrada", "cancelada"];
 
     private readonly ICatalogoRepository _catalogoRepository;
 
@@ -219,6 +220,29 @@ public class IncidenciaValidator
         return prioridad;
     }
 
+    /// <summary>
+    /// Lista de estados de un filtro: acepta valores repetidos o separados por coma, ignora mayúsculas y acentos,
+    /// quita repetidos y devuelve los nombres oficiales. Null si no se mandó ninguno (= todos los estados).
+    /// </summary>
+    public static IReadOnlyList<string>? EstadosDeFiltro(IEnumerable<string>? valores, List<ErrorDetalle> errores)
+    {
+        var pedidos = (valores ?? [])
+            .SelectMany(v => (v ?? string.Empty).Split(','))
+            .Select(v => v.Trim())
+            .Where(v => v.Length > 0)
+            .ToList();
+        if (pedidos.Count == 0) return null;
+
+        var resultado = new List<string>();
+        foreach (var pedido in pedidos)
+        {
+            var estado = ValorDeLista(pedido, Estados);
+            if (estado is null) errores.Add(IncidenciaErrors.EstadoNoValido(pedido, Estados));
+            else if (!resultado.Contains(estado)) resultado.Add(estado);
+        }
+        return resultado;
+    }
+
     /// <summary>Clave de categoría normalizada ("Cómputo" → "computo") o null.</summary>
     public static string? CategoriaDeFiltro(string? valor)
         => string.IsNullOrWhiteSpace(valor) ? null : TextoNormalizer.NormalizarClave(valor);
@@ -249,8 +273,8 @@ public class IncidenciaValidator
             throw IncidenciaErrors.IdInvalido();
     }
 
-    /// <summary>¿La incidencia ya está cerrada (resuelta o cancelada)?</summary>
-    public static bool EstaCerrada(string estado) => EstadosCerrados.Contains(estado);
+    /// <summary>¿La incidencia ya está en un estado final (resuelta, cerrada o cancelada)?</summary>
+    public static bool EstaFinalizada(string estado) => EstadosFinales.Contains(estado);
 
     /// <summary>¿Puede el usuario ver/trabajar esta incidencia? Reportante: solo las suyas · Técnico: solo las asignadas · Demás roles: todas.</summary>
     public static bool PuedeAcceder(Incidencia incidencia, UsuarioActual usuario)

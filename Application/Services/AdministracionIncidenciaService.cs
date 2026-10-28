@@ -97,14 +97,14 @@ public class AdministracionIncidenciaService
 
     /// <summary>
     /// Registra (o actualiza) el proveedor externo en tecnico_externo y lo anota en la bitácora.
-    /// No se permite en incidencias resueltas o canceladas.
+    /// No se permite en incidencias resueltas, cerradas o canceladas.
     /// </summary>
     public async Task<IncidenciaResponse> RegistrarTecnicoExternoAsync(string id, TecnicoExternoRequest request, UsuarioActual usuario)
     {
         var externo    = TecnicoExternoValidator.Validar(request);
         var incidencia = await ObtenerIncidenciaAsync(id);
 
-        if (IncidenciaValidator.EstaCerrada(incidencia.Estado))
+        if (IncidenciaValidator.EstaFinalizada(incidencia.Estado))
             throw TecnicoExternoErrors.IncidenciaCerrada(incidencia.Estado);
 
         if (TecnicoExternoValidator.EsIgual(incidencia.TecnicoExterno, externo))

@@ -60,9 +60,9 @@ public class IncidenciaAnaliticaController : ControllerBase
     ///
     /// Pipeline de agregación en MongoDB (no se cargan los documentos al backend):
     ///
-    /// 1. `$match`: solo incidencias `resuelta` con `fechas.creacion` y `fechas.resolucion` registradas.
+    /// 1. `$match`: solo incidencias `resuelta` o `cerrada` con `fechas.creacion` y `fechas.resolucion` registradas.
     /// 2. `$project`: horas de atención = `fechas.resolucion` − `fechas.creacion`.
-    /// 3. `$group` por `ubicacion.edificio`: `totalReportes` (`$sum: 1`), `promedioHoras` (`$avg`), además del caso más rápido y el más lento.
+    /// 3. `$group` por `ubicacion.edificio`: `totalReportes` (`$sum: 1`), el promedio (`$avg`), el caso más rápido y el más lento, y la suma (`$sum`) de las horas de trabajo registradas (`horas_invertidas`). Los tiempos se devuelven en horas y minutos (`tiempoPromedio`, `tiempoMinimo`, `tiempoMaximo`, `tiempoTrabajado`). Los primeros tres son tiempo de reloj (creación → resolución); `tiempoTrabajado` es el trabajo que los técnicos anotaron.
     /// 4. `$sort`: `ordenarPor=reportes` (por defecto) o `ordenarPor=tiempo`, de mayor a menor.
     ///
     /// Filtros: `fechaDesde` / `fechaHasta` (fecha de resolución, hora de México), `categoria`, `prioridad`.
@@ -88,11 +88,16 @@ public class IncidenciaAnaliticaController : ControllerBase
     ///
     /// Un solo pipeline (`$match` + `$facet`) que calcula tres indicadores sobre los mismos documentos:
     ///
-    /// 1. **Horas hombre totales:** `$sum` de `horas_invertidas` (y el promedio por incidencia con horas).
+    /// 1. **Horas hombre totales:** `$sum` de `horas_invertidas` (y el promedio por incidencia con tiempo). Se devuelve en horas y minutos (`tiempoHombreTotal`, `promedioPorIncidencia`).
     /// 2. **Top 10 de fallas recurrentes:** `$unwind` de `tags` → `$group` por etiqueta → `$sort` → `$limit: 10`.
     /// 3. **Proveedores externos:** incidencias con `tecnico_externo` registrado: total de casos, porcentaje y casos por empresa.
     ///
-    /// Filtros: `fechaDesde` / `fechaHasta` (fecha de creación, hora de México), `categoria`, `edificio`.
+    /// Filtros: `fechaDesde` / `fechaHasta` (fecha de creación, hora de México), `categoria`, `edificio` y `estado`.
+    ///
+    /// **Filtro `estado`:** si no se manda, se cuentan incidencias de **todos** los estados. Si se manda, solo las de esos estados
+    /// (se repite el parámetro: `?estado=resuelta&amp;estado=cancelada`, o con coma: `?estado=resuelta,cancelada`).
+    /// Todos los indicadores (`totalIncidencias`, horas hombre, promedio, etiquetas y proveedores externos) se calculan
+    /// solo sobre las incidencias que cumplen el filtro; el porcentaje de externos se saca sobre ese mismo total.
     /// </remarks>
     /// <response code="200">Indicadores calculados.</response>
     /// <response code="400">Filtros inválidos.</response>

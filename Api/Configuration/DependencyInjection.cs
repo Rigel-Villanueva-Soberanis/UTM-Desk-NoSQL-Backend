@@ -16,6 +16,8 @@ public static class DependencyInjection
     {
         // AutoMapper — registra todos los Profiles del ensamblado Application
         services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Application.Profiles.EntityProfile).Assembly));
+        // Acción de mapeo que necesita servicios (pone el enlace temporal firmado a las evidencias)
+        services.AddTransient<Application.Profiles.EnlaceTemporalEvidencia>();
 
         // Infraestructura — MongoDB
         var mongoConnectionString = configuration["MongoDB:ConnectionString"]!;

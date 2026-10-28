@@ -5,6 +5,9 @@ public class IncidenciaResponse
 {
     public string Id { get; set; } = string.Empty;
     public string Folio { get; set; } = string.Empty;
+
+    /// <summary>Número que obtuvo en el contador del día y su categoría (ej. 3 = la 3.ª de esa categoría ese día). Null si Redis no lo dio.</summary>
+    public long? ConsecutivoDia { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string Descripcion { get; set; } = string.Empty;
     public string Categoria { get; set; } = string.Empty;
@@ -15,7 +18,8 @@ public class IncidenciaResponse
     public DatosReportanteResponse DatosReportante { get; set; } = new();
     public UsuarioReferenciaResponse? TecnicoAsignado { get; set; }
     public TecnicoExternoResponse? TecnicoExterno { get; set; }
-    public double? HorasInvertidas { get; set; }
+    /// <summary>Tiempo total invertido, en horas y minutos (0 si aún no se registra nada).</summary>
+    public DuracionResponse TiempoInvertido { get; set; } = new();
     public List<string> Tags { get; set; } = new();
     public List<SeguimientoResponse> HistorialSeguimiento { get; set; } = new();
     public List<EvidenciaResponse> EvidenciasAdjuntas { get; set; } = new();
@@ -66,9 +70,25 @@ public class SeguimientoResponse
 public class EvidenciaResponse
 {
     public string NombreArchivo { get; set; } = string.Empty;
-    public string UrlStorage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Enlace firmado para ver o descargar el archivo. Dura pocos minutos (ver <see cref="VenceEn"/>):
+    /// no lo guardes ni lo compartas; si venció, vuelve a pedir el expediente y trae uno nuevo.
+    /// </summary>
+    public string UrlTemporal { get; set; } = string.Empty;
+
+    /// <summary>Instante (UTC) en que deja de funcionar <see cref="UrlTemporal"/>. Null si el archivo es antiguo y no tiene enlace temporal.</summary>
+    public DateTime? VenceEn { get; set; }
+
     public string? PublicId { get; set; }
     public string? Formato { get; set; }
+
+    /// <summary>Tipo de contenido. Ej: image/webp, application/pdf. Null en evidencias antiguas.</summary>
+    public string? TipoMime { get; set; }
+
+    /// <summary>Peso en kilobytes (2 decimales). Null en evidencias antiguas.</summary>
+    public double? PesoKb { get; set; }
+
     public UsuarioReferenciaResponse? SubidoPor { get; set; }
     public DateTime? FechaCarga { get; set; }
 }

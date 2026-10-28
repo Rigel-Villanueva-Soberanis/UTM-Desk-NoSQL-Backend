@@ -35,7 +35,8 @@ public class EvidenciaController : ControllerBase
     /// - Se validan **todos** antes de subir: si uno está mal, no se sube ninguno (errores en `archivos[i]`).
     /// - Las **imágenes** se convierten a **WebP**, se comprimen y se limitan a 1920 px por lado antes de guardarse.
     ///   Los PDF se guardan tal cual.
-    /// - La respuesta trae una lista con `publicId`, `formato`, `nombreArchivo` y `url` de cada archivo.
+    /// - Los archivos quedan con **acceso restringido**: no tienen URL pública. La respuesta trae, de cada uno, `publicId`, `formato`,
+    ///   `nombreArchivo`, `bytes` y un enlace firmado `urlTemporal` (para previsualizar) que **vence** a los 15 minutos (`venceEn`, UTC).
     /// - Después se ligan a la incidencia con `PATCH /api/incidencias/{id}/evidencias`.
     /// </remarks>
     /// <param name="archivos">Archivos a subir (campo "archivos" del form-data, se puede repetir hasta 3 veces).</param>

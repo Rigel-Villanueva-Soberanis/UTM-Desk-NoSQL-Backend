@@ -56,7 +56,7 @@ public class UsuarioController : ControllerBase
     ///
     /// Solo devuelve técnicos con cuenta `activo`, con datos mínimos:
     /// `id` (el que se manda en `PATCH /api/incidencias/{id}/asignar-tecnico`), `nombreCompleto`,
-    /// `clasificacion` (especialidad) e `incidenciasActivas` (asignadas que no están resueltas ni canceladas).
+    /// `clasificacion` (especialidad) e `incidenciasActivas` (asignadas que no están resueltas, cerradas ni canceladas).
     ///
     /// Filtros opcionales: `busqueda` (nombres y apellidos), `nombres`, `apellidos`, `clasificacion`.
     /// Sin paginación. Ordenado de menor a mayor carga de trabajo.

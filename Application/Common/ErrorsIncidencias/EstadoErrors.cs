@@ -18,6 +18,10 @@ public static class EstadoErrors
             ? $"No se puede pasar de '{actual}' a '{nuevo}'. Desde '{actual}' solo puedes pasar a: {string.Join(", ", permitidos)}."
             : $"No se puede pasar de '{actual}' a '{nuevo}'. Desde '{actual}' no puedes cambiar el estado.");
 
-    public static DomainException TecnicoSinPermiso(string nuevo) =>
-        new(ApiErrors.Forbidden, $"Como técnico solo puedes pasar incidencias a 'en proceso' o 'resuelta' (intentaste '{nuevo}').");
+    public static DomainException TecnicoSinPermiso(string nuevo, IEnumerable<string> destinos) =>
+        new(ApiErrors.Forbidden, $"Como técnico solo puedes pasar incidencias a: {string.Join(", ", destinos)} (intentaste '{nuevo}').");
+
+    public static DomainException CerradaSoloDesdeResuelta(string actual) =>
+        new(ApiErrors.Conflict, $"Solo se puede pasar a 'cerrada' una incidencia que está 'resuelta' (está '{actual}').",
+            [new ErrorDetalle("estado", "Primero la incidencia debe estar 'resuelta'; después se cierra para verificarla.")]);
 }

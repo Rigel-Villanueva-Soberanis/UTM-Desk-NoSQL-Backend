@@ -25,7 +25,7 @@ public interface IIncidenciaRepository
     /// </summary>
     Task<Incidencia?> AplicarCambiosAsync(string id, CambiosIncidencia cambios);
 
-    /// <summary>Cuántas incidencias NO cerradas (ni resueltas ni canceladas) tiene asignadas cada técnico.</summary>
+    /// <summary>Cuántas incidencias sin terminar (ni resueltas, cerradas ni canceladas) tiene asignadas cada técnico.</summary>
     Task<Dictionary<string, int>> ContarActivasPorTecnicoAsync(IEnumerable<string> idsTecnicos);
 
     /// <summary>Todas las etiquetas distintas usadas en las incidencias (distinct sobre el arreglo tags).</summary>

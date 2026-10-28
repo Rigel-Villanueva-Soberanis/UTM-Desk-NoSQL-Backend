@@ -38,13 +38,18 @@ public class EvidenciaService
             // El nombre refleja el formato real guardado (ej. foto.jpg → foto.webp)
             var nombre = validado.EsImagen ? Path.ChangeExtension(validado.Nombre, subido.Formato) : validado.Nombre;
 
+            var enlace = _archivoRepository.GenerarEnlaceTemporal(subido.PublicId, subido.Formato, subido.Url);
+
             subidos.Add(new EvidenciaSubidaResponse
             {
                 PublicId      = subido.PublicId,
                 NombreArchivo = nombre,
                 Formato       = subido.Formato,
                 Bytes         = subido.Bytes,
-                Url           = subido.Url
+                TipoMime      = EvidenciaValidator.TipoMimeDe(subido.Formato),
+                PesoKb        = EvidenciaValidator.PesoEnKb(subido.Bytes),
+                UrlTemporal   = enlace.Url,
+                VenceEn       = enlace.VenceEn
             });
         }
 

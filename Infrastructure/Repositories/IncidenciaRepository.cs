@@ -118,7 +118,7 @@ public class IncidenciaRepository : IIncidenciaRepository
     }
 
     /// <summary>
-    /// Cuenta, por técnico, las incidencias asignadas que siguen activas (ni resueltas ni canceladas).
+    /// Cuenta, por técnico, las incidencias asignadas que siguen activas (ni resueltas, cerradas ni canceladas).
     /// Una sola agregación para todos los técnicos; usa el índice ix_tecnico_estado.
     /// </summary>
     public async Task<Dictionary<string, int>> ContarActivasPorTecnicoAsync(IEnumerable<string> idsTecnicos)
@@ -128,7 +128,7 @@ public class IncidenciaRepository : IIncidenciaRepository
 
         var f      = Builders<Incidencia>.Filter;
         var filtro = f.In(i => i.TecnicoAsignado!.IdUsuario, ids)
-                   & f.Nin(i => i.Estado, new[] { "resuelta", "cancelada" });
+                   & f.Nin(i => i.Estado, new[] { "resuelta", "cerrada", "cancelada" });
 
         var conteos = await _collection.Aggregate()
             .Match(filtro)

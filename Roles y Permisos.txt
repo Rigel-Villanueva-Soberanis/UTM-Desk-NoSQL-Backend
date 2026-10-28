@@ -52,11 +52,13 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   Puede:
   * Ver la lista de las incidencias que tiene ASIGNADAS y el detalle de cada
     una.
-  * Pasar la incidencia de "abierta" a "en proceso" y de "en proceso" a
-    "resuelta" (siempre escribiendo el motivo). No puede hacer otros cambios
-    de estado.
+  * Pasar la incidencia de "abierta" a "en proceso", de "en proceso" a "en
+    espera" (cuando depende de algo, ej. una refaccion) o a "resuelta", y de
+    "en espera" de vuelta a "en proceso" (siempre escribiendo el motivo). Al
+    cambiar el estado puede anotar, en la misma accion, las horas y minutos
+    trabajados. No puede cerrar ni cancelar: "cerrada" la pone quien verifica.
   * Escribir notas de seguimiento (la bitacora de lo que va haciendo).
-  * Registrar las horas invertidas (de 0.25 a 24 por registro; se van
+  * Registrar las horas invertidas (en horas y minutos, de 1 minuto a 24 horas por registro; se van
     sumando).
   * Agregar y quitar etiquetas (tags) en sus incidencias.
   * Subir y ligar evidencias (fotos o pdf) a sus incidencias, hasta 3 suyas
@@ -68,7 +70,7 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   * Asignarse o reasignar incidencias, ni registrar el proveedor externo.
   * Borrar incidencias, usar la busqueda general ni ver analiticas.
   * Administrar usuarios ni catalogos.
-  * Modificar incidencias ya "resuelta" o "cancelada".
+  * Modificar incidencias ya "resuelta", "cerrada" o "cancelada".
 
 
 ================================================================================
@@ -83,7 +85,8 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   * Buscar por texto en titulo y descripcion, ordenado por relevancia.
   * Corregir los datos de cualquier incidencia, en cualquier estado.
   * Asignar o reasignar tecnico. Si estaba "abierta", pasa sola a "en proceso".
-  * Cambiar el estado a cualquiera (incluso reabrir una resuelta o cancelada).
+  * Cambiar el estado a cualquiera (incluso reabrir una resuelta, cerrada o cancelada),
+    cerrar una "resuelta" (verificacion) o cancelar.
   * Agregar y quitar etiquetas.
   * Registrar o actualizar los datos del proveedor externo (empresa, tecnico
     responsable, contacto y orden de servicio).
@@ -118,7 +121,8 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   Puede:
   * Ver todas las incidencias, con sus filtros, y el detalle de cada una.
   * Asignar o reasignar tecnico (con la lista de tecnicos activos y su carga).
-  * Cambiar el estado de cualquier incidencia (incluso reabrir).
+  * Cambiar el estado de cualquier incidencia (incluso reabrir), cerrar una
+    "resuelta" (verificacion) o cancelar.
   * Agregar y quitar etiquetas.
   * Registrar o actualizar los datos del proveedor externo.
   * Borrar una incidencia. Tambien se borran sus evidencias y no se puede
@@ -165,7 +169,8 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   * Ver todas las incidencias, con todos los filtros, y buscar por texto.
   * Corregir los datos de cualquier incidencia, en cualquier estado.
   * Asignar o reasignar tecnico y ver la lista de tecnicos con su carga.
-  * Cambiar el estado a cualquiera (incluso reabrir).
+  * Cambiar el estado a cualquiera (incluso reabrir), cerrar una "resuelta"
+    (verificacion) o cancelar.
   * Escribir notas de seguimiento y registrar horas en cualquier incidencia.
   * Agregar y quitar etiquetas.
   * Registrar o actualizar el proveedor externo.
@@ -209,20 +214,24 @@ Administrativos. Aqui se explica, rol por rol, lo que puede hacer en el sistema.
   Editar catalogos                          X                 X
 
   *  El reportante solo corrige sus incidencias y solo si estan "abiertas".
-  ** El tecnico solo puede pasar de "abierta" a "en proceso" y de "en proceso"
-     a "resuelta".
+  ** El tecnico solo puede pasar de "abierta" a "en proceso", de "en proceso" a
+     "en espera" o "resuelta", y de "en espera" a "en proceso". Nunca cierra ni
+     cancela: eso lo hacen Root, Soporte y Administrativos.
 
 
 ================================================================================
   REGLAS GENERALES
 ================================================================================
-  * Una incidencia "resuelta" o "cancelada" ya no acepta evidencias, notas,
+  * Una incidencia "resuelta", "cerrada" o "cancelada" ya no acepta evidencias, notas,
     horas, asignacion de tecnico ni cambios de proveedor. Para volver a
     trabajarla, Root, Soporte o Administrativos deben reabrirla.
-  * Estados: abierta -> en proceso -> por autorizar -> resuelta / cancelada.
+  * Estados: abierta -> en proceso <-> en espera -> resuelta -> cerrada
+    (o cancelada). "Resuelta" la pone el tecnico cuando termino; "cerrada" la
+    ponen Root, Soporte o Administrativos cuando verifican que de verdad quedo
+    resuelta (solo se puede cerrar una incidencia "resuelta").
   * Al asignar un tecnico a una incidencia "abierta", pasa sola a "en proceso".
-  * Las incidencias "resueltas" se borran automaticamente a los 60 dias; si se
-    reabren antes, ese borrado se cancela.
+  * Las incidencias "resueltas" o "cerradas" se borran automaticamente a los
+    60 dias de haberse resuelto; si se reabren antes, ese borrado se cancela.
   * Cada cambio queda registrado en el historial de la incidencia, con quien lo
     hizo y cuando.
   * El edificio y el salon que se elijan al reportar deben existir en el

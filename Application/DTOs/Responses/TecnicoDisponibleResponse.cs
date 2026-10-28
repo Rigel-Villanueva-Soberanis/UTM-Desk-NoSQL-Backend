@@ -11,6 +11,6 @@ public class TecnicoDisponibleResponse
     /// <summary>Especialidad (clasificación del rol). Ej: redes, sistemas, mantenimiento.</summary>
     public string? Clasificacion { get; set; }
 
-    /// <summary>Incidencias asignadas que aún no están resueltas ni canceladas (carga de trabajo).</summary>
+    /// <summary>Incidencias asignadas que aún no están resueltas, cerradas ni canceladas (carga de trabajo).</summary>
     public int IncidenciasActivas { get; set; }
 }

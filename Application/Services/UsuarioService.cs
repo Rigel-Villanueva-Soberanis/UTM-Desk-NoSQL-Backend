@@ -60,7 +60,7 @@ public class UsuarioService
     // ─── Selector de técnicos (Root, Soporte, Administrativos) ───────────────
 
     /// <summary>
-    /// Técnicos activos con su carga de trabajo (incidencias no resueltas ni canceladas).
+    /// Técnicos activos con su carga de trabajo (incidencias no resueltas, cerradas ni canceladas).
     /// Ordenados de menor a mayor carga para facilitar la asignación.
     /// </summary>
     public async Task<List<TecnicoDisponibleResponse>> GetTecnicosAsync(TecnicoFiltroRequest filtro)

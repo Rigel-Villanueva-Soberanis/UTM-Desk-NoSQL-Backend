@@ -35,6 +35,9 @@ public static class EvidenciaErrors
         new(ApiErrors.Conflict, $"Como {rol} puedes tener máximo {maximo} evidencias en esta incidencia y ya hay {actuales}.",
             [new ErrorDetalle("evidencias", $"Solo puedes agregar {Math.Max(0, maximo - actuales)} evidencia(s) más.")]);
 
+    public static DomainException AlmacenamientoNoDisponible() =>
+        new(ApiErrors.ServiceUnavailable, "No se pudo verificar el archivo en el almacenamiento. Intenta de nuevo en unos minutos.");
+
     // ─── Errores por archivo del upload (campo "archivos[i]") ────────────────
 
     public static ErrorDetalle ArchivoVacio(string campo) =>
@@ -59,6 +62,9 @@ public static class EvidenciaErrors
 
     public static ErrorDetalle FormatoNoPermitido(string campo, IEnumerable<string> formatosValidos) =>
         new(campo, $"Formato no permitido. Formatos válidos: {string.Join(", ", formatosValidos)}.");
+
+    public static ErrorDetalle ArchivoNoExiste(string campo) =>
+        new(campo, "El archivo no existe en el almacenamiento. Súbelo primero con POST /api/evidencias/upload.");
 
     public static ErrorDetalle EvidenciaRepetida(string campo) =>
         new(campo, "Este archivo está repetido en la petición.");

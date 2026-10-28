@@ -1,3 +1,4 @@
+using Application.Common.Utilidades;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
 using Application.Interfaces;
@@ -75,9 +76,10 @@ public class AnaliticaService
         {
             Edificio      = d.Edificio,
             TotalReportes = d.TotalReportes,
-            PromedioHoras = d.PromedioHoras,
-            MinimoHoras   = d.MinimoHoras,
-            MaximoHoras   = d.MaximoHoras
+            TiempoPromedio = DuracionResponse.DeHoras(d.PromedioHoras),
+            TiempoMinimo   = DuracionResponse.DeHoras(d.MinimoHoras),
+            TiempoMaximo   = DuracionResponse.DeHoras(d.MaximoHoras),
+            TiempoTrabajado = DuracionResponse.DeHoras(d.HorasTrabajadas)
         }).ToList();
     }
 
@@ -91,11 +93,11 @@ public class AnaliticaService
         return new EficienciaGlobalResponse
         {
             TotalIncidencias           = datos.TotalIncidencias,
-            HorasHombreTotales         = datos.HorasHombreTotales,
+            TiempoHombreTotal          = DuracionResponse.DeHoras(datos.HorasHombreTotales),
             IncidenciasConHoras        = datos.IncidenciasConHoras,
-            PromedioHorasPorIncidencia = datos.IncidenciasConHoras == 0
+            PromedioPorIncidencia      = DuracionResponse.DeHoras(datos.IncidenciasConHoras == 0
                 ? 0
-                : Math.Round(datos.HorasHombreTotales / datos.IncidenciasConHoras, 2),
+                : datos.HorasHombreTotales / datos.IncidenciasConHoras),
             TopTags = datos.TopTags
                 .Select(t => new TagFrecuenciaResponse { Tag = t.Tag, Total = t.Total })
                 .ToList(),

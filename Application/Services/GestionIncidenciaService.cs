@@ -43,7 +43,7 @@ public class GestionIncidenciaService
     {
         var incidencia = await ObtenerIncidenciaAsync(id);
 
-        if (IncidenciaValidator.EstaCerrada(incidencia.Estado))
+        if (IncidenciaValidator.EstaFinalizada(incidencia.Estado))
             throw AsignacionErrors.IncidenciaCerrada(incidencia.Estado);
 
         // Validación de rol en la base de datos
@@ -90,10 +90,13 @@ public class GestionIncidenciaService
     // ─── PATCH /api/incidencias/{id}/cambiar-estado ─────────────────────────
 
     /// <summary>
-    /// Cambia el estado con su motivo.
+    /// Cambia el estado con su motivo y, si vienen horas/minutos, suma ese tiempo; todo en UN solo updateOne atómico
+    /// ($set estado y fecha de resolución, $push bitácora, $inc horas_invertidas).
     ///   • "resuelta": fechas.resolucion = ahora (inicia el conteo del índice TTL de 60 días).
-    ///   • Reapertura desde "resuelta": fechas.resolucion = null (se detiene el TTL).
-    ///   • Técnico: solo en sus incidencias asignadas y solo a "en proceso" o "resuelta".
+    ///   • "cerrada" (solo desde "resuelta"): conserva la fecha de resolución, así el TTL sigue contando.
+    ///   • Reapertura desde "resuelta"/"cerrada" a un estado no final: fechas.resolucion = null (se detiene el TTL).
+    ///   • Técnico: solo en sus incidencias asignadas y solo a "en proceso", "en espera" o "resuelta".
+    ///   • Horas: solo el técnico asignado o Root.
     /// </summary>
     public async Task<IncidenciaResponse> CambiarEstadoAsync(string id, CambiarEstadoRequest request, UsuarioActual usuario)
     {
@@ -106,7 +109,28 @@ public class GestionIncidenciaService
         EstadoIncidenciaValidator.ValidarTransicion(incidencia.Estado, nuevo, usuario);
 
         var resuelve = nuevo == EstadoIncidenciaValidator.Resuelta;
-        var reabre   = incidencia.Estado == EstadoIncidenciaValidator.Resuelta;
+        var estabaResuelta = incidencia.Estado is EstadoIncidenciaValidator.Resuelta or EstadoIncidenciaValidator.Cerrada;
+        var sigueResuelta  = nuevo is EstadoIncidenciaValidator.Resuelta or EstadoIncidenciaValidator.Cerrada;
+        var reabre   = estabaResuelta && !sigueResuelta;
+
+        var bitacora = new List<SeguimientoIncidencia>
+        {
+            BitacoraIncidencia.CambioEstado(usuario, incidencia.Estado, nuevo, TextoSeguro.Limpiar(request.Motivo))
+        };
+
+        // Horas opcionales en la misma operación
+        double? horasASumar = null;
+        var minutos = DuracionHoras.AMinutos(request.Horas, request.Minutos);
+        if (minutos > 0)
+        {
+            if (!usuario.EsRol(RolesSistema.Root) && !usuario.EsRol(RolesSistema.Tecnico))
+                throw SeguimientoErrors.HorasSoloTecnico();
+            if (minutos > DuracionHoras.MinutosMaximosPorSesion)
+                throw SeguimientoErrors.TiempoFueraDeRango();
+
+            horasASumar = DuracionHoras.AHoras(minutos);
+            bitacora.Add(BitacoraIncidencia.Horas(usuario, minutos, null, nuevo));
+        }
 
         var actualizada = await GuardarAsync(id, new CambiosIncidencia
         {
@@ -114,7 +138,9 @@ public class GestionIncidenciaService
             NuevoEstado       = nuevo,
             CambiarResolucion = resuelve || reabre,
             FechaResolucion   = resuelve ? DateTime.UtcNow : null,   // null = se desactiva el TTL
-            Bitacora          = [BitacoraIncidencia.CambioEstado(usuario, incidencia.Estado, nuevo, TextoSeguro.Limpiar(request.Motivo))]
+            HorasASumar       = horasASumar,
+            InicializarHoras  = horasASumar is not null && incidencia.HorasInvertidas is null,
+            Bitacora          = bitacora
         });
 
         return _mapper.Map<IncidenciaResponse>(actualizada);
@@ -135,24 +161,33 @@ public class GestionIncidenciaService
 
     // ─── PATCH /api/incidencias/{id}/horas-invertidas ───────────────────────
 
-    /// <summary>Suma horas con $inc (ej. 1.5 + 2.0 = 3.5) y lo registra en la bitácora.</summary>
+    /// <summary>
+    /// Recibe horas y minutos, los convierte a horas decimales (1 h 30 min = 1.5), los suma con $inc
+    /// y lo registra en la bitácora. La respuesta vuelve a convertir a horas y minutos.
+    /// </summary>
     public async Task<HorasInvertidasResponse> RegistrarHorasAsync(string id, RegistrarHorasRequest request, UsuarioActual usuario)
     {
         var incidencia = await ObtenerIncidenciaParaTecnicoAsync(id, usuario);
 
-        var entrada = BitacoraIncidencia.Horas(usuario, request.Horas, request.Comentario is null ? null : TextoSeguro.Limpiar(request.Comentario), incidencia.Estado);
+        var minutos = DuracionHoras.AMinutos(request.Horas, request.Minutos);
+        if (minutos < DuracionHoras.MinutosMinimosPorSesion || minutos > DuracionHoras.MinutosMaximosPorSesion)
+            throw SeguimientoErrors.TiempoFueraDeRango();
+
+        var horasDecimales = DuracionHoras.AHoras(minutos);
+
+        var entrada = BitacoraIncidencia.Horas(usuario, minutos, request.Comentario is null ? null : TextoSeguro.Limpiar(request.Comentario), incidencia.Estado);
 
         var actualizada = await GuardarAsync(id, new CambiosIncidencia
         {
-            HorasASumar      = request.Horas,
+            HorasASumar      = horasDecimales,
             InicializarHoras = incidencia.HorasInvertidas is null,
             Bitacora         = [entrada]
         });
 
         return new HorasInvertidasResponse
         {
-            HorasRegistradas = request.Horas,
-            HorasTotales     = actualizada.HorasInvertidas ?? request.Horas,
+            TiempoRegistrado = DuracionResponse.DeHoras(horasDecimales),
+            TiempoTotal      = DuracionResponse.DeHoras(actualizada.HorasInvertidas ?? horasDecimales),
             Seguimiento      = _mapper.Map<SeguimientoResponse>(entrada)
         };
     }
@@ -174,7 +209,7 @@ public class GestionIncidenciaService
         if (usuario.EsRol(RolesSistema.Tecnico) && !IncidenciaValidator.EsTecnicoAsignado(incidencia, usuario))
             throw SeguimientoErrors.NoAsignado();
 
-        if (IncidenciaValidator.EstaCerrada(incidencia.Estado))
+        if (IncidenciaValidator.EstaFinalizada(incidencia.Estado))
             throw SeguimientoErrors.IncidenciaCerrada(incidencia.Estado);
 
         return incidencia;
