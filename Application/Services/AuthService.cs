@@ -34,8 +34,9 @@ public class AuthService
             (request.Password, "password")
         );
 
-        // 1. Buscar el usuario por su nombre de usuario
-        var usuario = await _usuarioRepository.GetByUsernameAsync(request.Usuario.Trim().ToLowerInvariant())
+        // 1. Buscar el usuario por su nombre de usuario (sin importar mayúsculas ni acentos:
+        //    los usuarios se guardan sin acentos, así que "JOSÉ" y "jose" entran igual)
+        var usuario = await _usuarioRepository.GetByUsernameAsync(TextoNormalizer.SinAcentos(request.Usuario).Trim().ToLowerInvariant())
             ?? throw AuthErrors.CredencialesInvalidas();
 
         // 2. Verificar que la cuenta esté activa
