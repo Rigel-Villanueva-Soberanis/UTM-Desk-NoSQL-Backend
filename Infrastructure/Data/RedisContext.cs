@@ -17,10 +17,40 @@ public class RedisContext : IDisposable
             if (string.IsNullOrWhiteSpace(connectionString))
                 throw new InvalidOperationException("Falta configurar 'ConnectionStrings:Redis' en appsettings.json (ej. \"localhost:6379\").");
 
-            var opciones = ConfigurationOptions.Parse(connectionString);
+            var opciones = ConfigurationOptions.Parse(NormalizarCadena(connectionString));
             opciones.AbortOnConnectFail = false;   // reintenta en lugar de tumbar la app
             return ConnectionMultiplexer.Connect(opciones);
         }, LazyThreadSafetyMode.PublicationOnly);
+    }
+
+    /// <summary>
+    /// Acepta "host:puerto,password=..." (local) y también URLs redis://usuario:clave@host:puerto
+    /// o rediss://... (las que entregan Render, Upstash y Railway), que se convierten al formato de StackExchange.Redis.
+    /// </summary>
+    internal static string NormalizarCadena(string cadena)
+    {
+        if (!cadena.StartsWith("redis://", StringComparison.OrdinalIgnoreCase) &&
+            !cadena.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+            return cadena;
+
+        var uri = new Uri(cadena);
+        var puerto = uri.Port > 0 ? uri.Port : 6379;
+        var resultado = $"{uri.Host}:{puerto}";
+
+        var info = uri.UserInfo;
+        if (!string.IsNullOrEmpty(info))
+        {
+            var partes = info.Split(':', 2);
+            var clave = Uri.UnescapeDataString(partes.Length == 2 ? partes[1] : partes[0]);
+            if (!string.IsNullOrEmpty(clave)) resultado += $",password={clave}";
+            if (partes.Length == 2 && !string.IsNullOrEmpty(partes[0]) && partes[0] != "default")
+                resultado += $",user={Uri.UnescapeDataString(partes[0])}";
+        }
+
+        if (uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase))
+            resultado += ",ssl=true";
+
+        return resultado;
     }
 
     public IDatabase GetDatabase() => _conexion.Value.GetDatabase();

@@ -1,0 +1,20 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.gitignore
+Dockerfile
+.dockerignore
+docker-compose.yml
+# Secretos y archivos locales: nunca dentro de la imagen
+**/appsettings.json
+**/appsettings.*.json
+.env
+.env.*
+Villanueva-Base-Datos/
+node_modules/
+package-lock.json
+*.md
+*.txt
+*.postman_collection.json
+**/*.user
