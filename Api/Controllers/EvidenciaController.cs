@@ -66,4 +66,17 @@ public class EvidenciaController : ControllerBase
                 await entrada.Contenido.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// Purga archivos de Cloudinary. Lo invoca el Trigger de Atlas al borrar una incidencia (TTL 60 días).
+    /// Autenticación por header X-Api-Key.
+    /// </summary>
+    [HttpPost("purgar")]
+    [AllowAnonymous]
+    [ApiKeyAuth]
+    public async Task<IActionResult> Purgar([FromBody] PurgarArchivosRequest request)
+    {
+        var resultado = await _service.PurgarAsync(request);
+        return Ok(ApiResponse<PurgarArchivosResponse>.Ok(resultado, "Archivos purgados"));
+    }
 }

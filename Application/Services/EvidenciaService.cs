@@ -1,3 +1,4 @@
+using Application.Common.ErrorCatalog;
 using Application.Common.Seguridad;
 using Application.DTOs.Requests;
 using Application.DTOs.Responses;
@@ -54,5 +55,30 @@ public class EvidenciaService
         }
 
         return subidos;
+    }
+
+    /// <summary>
+    /// Elimina de Cloudinary los archivos de una incidencia borrada por el TTL de Atlas.
+    /// Solo acepta public_id dentro de utmdesk/evidencias/.
+    /// </summary>
+    public async Task<PurgarArchivosResponse> PurgarAsync(PurgarArchivosRequest request)
+    {
+        var ids = request.PublicIds?.Where(i => !string.IsNullOrWhiteSpace(i)).Distinct().ToList()
+                  ?? new List<string>();
+
+        if (ids.Count == 0 || ids.Count > 50)
+            throw new DomainException(ApiErrors.ValidationFailed, "Se requieren entre 1 y 50 publicIds.");
+
+        if (ids.Any(i => !i.StartsWith("utmdesk/evidencias/", StringComparison.Ordinal) || i.Contains("..")))
+            throw new DomainException(ApiErrors.ValidationFailed, "publicId fuera de la carpeta de evidencias.");
+
+        var resultados = await Task.WhenAll(ids.Select(_archivoRepository.EliminarAsync));
+
+        return new PurgarArchivosResponse
+        {
+            Solicitados = ids.Count,
+            Eliminados  = resultados.Count(r => r.Eliminado),
+            Fallidos    = resultados.Count(r => !r.Eliminado)
+        };
     }
 }
