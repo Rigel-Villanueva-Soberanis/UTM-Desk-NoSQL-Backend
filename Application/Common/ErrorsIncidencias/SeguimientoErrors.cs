@@ -15,6 +15,13 @@ public static class SeguimientoErrors
         new(ApiErrors.Forbidden, "Solo el técnico asignado (o Root) puede registrar horas de trabajo.",
             [new ErrorDetalle("horas", "Solo el técnico asignado (o Root) puede registrar horas de trabajo.")]);
 
+    /// <summary>El técnico quiere resolver y la incidencia aún no tiene tiempo registrado.</summary>
+    public static DomainException HorasObligatoriasAlResolver()
+    {
+        const string mensaje = "Para marcar la incidencia como resuelta debes registrar el tiempo trabajado (horas y minutos).";
+        return new(ApiErrors.ValidationFailed, mensaje, [new ErrorDetalle("horas", mensaje)]);
+    }
+
     public static DomainException TiempoFueraDeRango()
     {
         const string mensaje = "El tiempo registrado debe ser de al menos 1 minuto y como máximo 24 horas.";

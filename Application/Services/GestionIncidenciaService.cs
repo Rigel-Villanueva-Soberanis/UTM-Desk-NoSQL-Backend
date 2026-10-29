@@ -118,9 +118,13 @@ public class GestionIncidenciaService
             BitacoraIncidencia.CambioEstado(usuario, incidencia.Estado, nuevo, TextoSeguro.Limpiar(request.Motivo))
         };
 
-        // Horas opcionales en la misma operación
+        // Horas en la misma operación: opcionales, salvo que el técnico resuelva una incidencia sin tiempo registrado
         double? horasASumar = null;
         var minutos = DuracionHoras.AMinutos(request.Horas, request.Minutos);
+
+        if (resuelve && usuario.EsRol(RolesSistema.Tecnico) && minutos == 0 && (incidencia.HorasInvertidas ?? 0) <= 0)
+            throw SeguimientoErrors.HorasObligatoriasAlResolver();
+
         if (minutos > 0)
         {
             if (!usuario.EsRol(RolesSistema.Root) && !usuario.EsRol(RolesSistema.Tecnico))
